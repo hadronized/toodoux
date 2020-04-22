@@ -1,0 +1,18 @@
+[package]
+name = "toodoux"
+version = "0.1.0"
+license = "BSD-3-Clause"
+authors = ["Dimitri Sabadie <dimitri.sabadie@gmail.com>"]
+description = "A modern todo management tool"
+keywords = ["todo"]
+categories = ["development-tools"]
+homepage = "https://github.com/phaazon/toodoux"
+repository = "https://github.com/phaazon/toodoux"
+readme = "README.md"
+edition = "2018"
+
+[dependencies]
+colored = "1.9"
+serde = { version = "1", features = ["derive"] }
+structopt = "0.3.13"
+toml = "0.5.6"
