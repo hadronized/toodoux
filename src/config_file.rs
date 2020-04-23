@@ -9,25 +9,37 @@ use std::path::{Path, PathBuf};
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ConfigFile {
   /// Path to the folder containing all the tasks.
-  tasks_root_dir: PathBuf,
+  root_dir: PathBuf,
 }
 
 impl ConfigFile {
   pub const CONFIG_PATH: &'static str = "~/.toodoux/toodoux.toml";
 
-  pub fn get_config_path() -> Result<PathBuf, Box<dyn Error>> {
+  fn get_config_path() -> Result<PathBuf, Box<dyn Error>> {
     let home = env::var("HOME")?;
-    let path = Path::new(&home).join(".toodoux/config.toml");
+    let path = Path::new(&home).join(".toodoux");
 
     Ok(path)
+  }
+
+  pub fn root_dir(&self) -> &Path {
+    &self.root_dir
+  }
+
+  pub fn config_toml_path(&self) -> PathBuf {
+    self.root_dir.join("config.toml")
+  }
+
+  pub fn taskuid_path(&self) -> PathBuf {
+    self.root_dir.join(".taskuid")
   }
 
   pub fn get() -> Option<Self> {
     let path = Self::get_config_path().ok()?;
 
-    if path.is_file() {
+    if path.is_dir() {
       Some(ConfigFile {
-        tasks_root_dir: path.to_owned(),
+        root_dir: path.to_owned(),
       })
     } else {
       None
@@ -35,25 +47,20 @@ impl ConfigFile {
   }
 
   pub fn create() -> Option<Self> {
-    let tasks_root_dir = Self::get_config_path().ok()?;
-    Some(ConfigFile { tasks_root_dir })
+    let root_dir = Self::get_config_path().ok()?;
+    Some(ConfigFile { root_dir })
   }
 
   pub fn save(&self) -> Result<(), Box<dyn Error>> {
     let serialized = toml::to_string_pretty(self)?;
 
-    let path = Self::get_config_path()?;
+    let root_dir = self.root_dir();
+    fs::create_dir_all(root_dir)?;
 
-    // create parent directories if missing
-    let parent = path
-      .parent()
-      .ok_or_else(|| "trying to save file at wrong location on the file system")?;
+    let _ = fs::write(self.config_toml_path(), serialized)?;
 
-    if !parent.is_dir() {
-      fs::create_dir_all(parent)?;
-    }
-
-    fs::write(path, serialized)?;
+    // create UID tracker
+    let _ = fs::write(self.taskuid_path(), "0");
 
     Ok(())
   }

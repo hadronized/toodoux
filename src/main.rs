@@ -1,12 +1,15 @@
 mod cli;
 mod config_file;
+mod task;
 
 use colored::Colorize;
 use std::error::Error;
 use std::io::{self, Write as _};
 use structopt::StructOpt;
 
+use crate::cli::Command;
 use crate::config_file::ConfigFile;
+use crate::task::{Task, TaskManager};
 
 fn print_introduction_text() {
   println!(
@@ -48,7 +51,7 @@ fn print_no_file_information() {
 
 fn main() -> Result<(), Box<dyn Error>> {
   match ConfigFile::get() {
-    Some(config) => Ok(()),
+    Some(config) => initiate(config),
 
     None => {
       let mut input = String::new();
@@ -80,6 +83,7 @@ fn main() -> Result<(), Box<dyn Error>> {
       if must_create_config_file {
         let config = ConfigFile::create().ok_or_else(|| "cannot create config file")?;
         config.save()?;
+
         Ok(())
       } else {
         print_no_file_information();
@@ -87,4 +91,24 @@ fn main() -> Result<(), Box<dyn Error>> {
       }
     }
   }
+}
+
+fn initiate(config: ConfigFile) -> Result<(), Box<dyn Error>> {
+  match Command::from_args() {
+    Command::Add { content } => {
+      if content.is_empty() {
+        todo!();
+      } else {
+        let name = content.join(" ");
+        let mut task_mgr = TaskManager::new_from_config(&config)?;
+        let task = task_mgr.create_task(&config, name, "", Vec::new())?;
+
+        println!("{}", task);
+      }
+    }
+
+    _ => (),
+  }
+
+  Ok(())
 }
