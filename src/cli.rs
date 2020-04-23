@@ -10,6 +10,14 @@ use structopt::StructOpt;
 pub enum Command {
   /// Add a task.
   Add {
+    /// Mark the item as ONGOING.
+    #[structopt(long)]
+    ongoing: bool,
+
+    /// Mark the item as DONE.
+    #[structopt(long)]
+    done: bool,
+
     /// Content of the task.
     ///
     /// If nothing is set, an interactive prompt is spawned for you to enter the content

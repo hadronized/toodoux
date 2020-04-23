@@ -9,7 +9,7 @@ use structopt::StructOpt;
 
 use crate::cli::Command;
 use crate::config_file::ConfigFile;
-use crate::task::{Task, TaskManager};
+use crate::task::{State, TaskManager};
 
 fn print_introduction_text() {
   println!(
@@ -95,13 +95,26 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 fn initiate(config: ConfigFile) -> Result<(), Box<dyn Error>> {
   match Command::from_args() {
-    Command::Add { content } => {
+    Command::Add {
+      content,
+      ongoing,
+      done,
+    } => {
       if content.is_empty() {
         todo!();
       } else {
-        let name = content.join(" ");
         let mut task_mgr = TaskManager::new_from_config(&config)?;
-        let task = task_mgr.create_task(&config, name, "", Vec::new())?;
+
+        let name = content.join(" ");
+        let mut task = task_mgr.create_task(name, "", Vec::new());
+
+        if ongoing {
+          task.change_state(State::Ongoing("ONGOING".to_owned()));
+        } else if done {
+          task.change_state(State::Done("DONE".to_owned()));
+        }
+
+        task_mgr.save_task(&config, &task)?;
 
         println!("{}", task);
       }

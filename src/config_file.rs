@@ -6,6 +6,8 @@ use std::error::Error;
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use crate::task::UID;
+
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ConfigFile {
   /// Path to the folder containing all the tasks.
@@ -13,8 +15,6 @@ pub struct ConfigFile {
 }
 
 impl ConfigFile {
-  pub const CONFIG_PATH: &'static str = "~/.toodoux/toodoux.toml";
-
   fn get_config_path() -> Result<PathBuf, Box<dyn Error>> {
     let home = env::var("HOME")?;
     let path = Path::new(&home).join(".toodoux");
@@ -32,6 +32,10 @@ impl ConfigFile {
 
   pub fn taskuid_path(&self) -> PathBuf {
     self.root_dir.join(".taskuid")
+  }
+
+  pub fn task_path(&self, uid: UID) -> PathBuf {
+    self.root_dir.join(format!("task_{}.json", u32::from(uid)))
   }
 
   pub fn get() -> Option<Self> {
