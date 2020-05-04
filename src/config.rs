@@ -46,6 +46,18 @@ impl Config {
     self.main.root_dir.join(".NEW_TASK")
   }
 
+  pub fn todo_state_name(&self) -> &str {
+    &self.main.todo_state_name
+  }
+
+  pub fn ongoing_state_name(&self) -> &str {
+    &self.main.ongoing_state_name
+  }
+
+  pub fn done_state_name(&self) -> &str {
+    &self.main.done_state_name
+  }
+
   pub fn get() -> Result<Option<Self>, Box<dyn Error>> {
     let path = Self::get_config_path()?;
 

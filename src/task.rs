@@ -36,7 +36,7 @@ impl TaskManager {
     self.next_uid = UID(uid);
   }
 
-  pub fn create_task<N, C, L>(&mut self, name: N, content: C, labels: L) -> Task
+  pub fn create_task<N, C, L>(&mut self, name: N, content: C, state: State, labels: L) -> Task
   where
     N: Into<String>,
     C: Into<String>,
@@ -46,14 +46,17 @@ impl TaskManager {
 
     self.increment_uid();
 
-    Task {
+    let task = Task {
       uid,
       name: name.into(),
       content: content.into(),
-      state: State::Todo,
+      state,
       labels: labels.into(),
       history: vec![Event::Created(Utc::now())],
-    }
+    };
+
+    self.tasks.push(task.clone());
+    task
   }
 
   pub fn create_task_from_editor(&mut self, config: &Config) -> Result<Task, Box<dyn Error>> {
@@ -69,7 +72,7 @@ impl TaskManager {
     let content = fs::read_to_string(&task_path)?;
     fs::remove_file(task_path)?;
 
-    Ok(self.create_task("<no name yet>", content, Vec::new()))
+    Ok(self.create_task("<no name yet>", content, State::Todo, Vec::new()))
   }
 
   pub fn save(&mut self, config: &Config) -> Result<(), Box<dyn Error>> {
@@ -78,9 +81,13 @@ impl TaskManager {
       self,
     )?)
   }
+
+  pub fn tasks(&self) -> impl Iterator<Item = &Task> {
+    self.tasks.iter()
+  }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Task {
   /// UID.
   uid: UID,
@@ -97,20 +104,9 @@ pub struct Task {
 }
 
 impl Task {
-  //pub fn new<N, C, L>(name: N, content: C, labels: L) -> Self
-  //where
-  //  N: Into<String>,
-  //  C: Into<String>,
-  //  L: Into<Vec<String>>,
-  //{
-  //  Task {
-  //    name: name.into(),
-  //    content: content.into(),
-  //    state: State::Todo,
-  //    labels: labels.into(),
-  //    history: vec![Event::Created(Utc::now())],
-  //  }
-  //}
+  pub fn state(&self) -> &State {
+    &self.state
+  }
 
   pub fn change_state(&mut self, state: State) {
     self.state = state.clone();
@@ -178,9 +174,9 @@ pub enum State {
 impl fmt::Display for State {
   fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
     match *self {
-      State::Todo => write!(f, "{}", "TODO".purple().bold()),
-      State::Ongoing(ref s) => write!(f, "{}", s.blue().bold()),
-      State::Done(ref s) => write!(f, "{}", s.dimmed()),
+      State::Todo => write!(f, "{:8}", "TODO".purple().bold()),
+      State::Ongoing(ref s) => write!(f, "{:8}", s.green().bold()),
+      State::Done(ref s) => write!(f, "{:8}", s.dimmed()),
     }
   }
 }

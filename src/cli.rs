@@ -31,5 +31,17 @@ pub enum Command {
     all: bool,
   },
   /// List all the tasks.
-  List,
+  List {
+    /// Filter with TODO items.
+    #[structopt(long)]
+    todo: bool,
+
+    /// Filter with ONGOING items.
+    #[structopt(long)]
+    ongoing: bool,
+
+    /// Filter with DONE items.
+    #[structopt(long)]
+    done: bool,
+  },
 }

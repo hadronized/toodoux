@@ -106,20 +106,41 @@ fn initiate(config: Config) -> Result<(), Box<dyn Error>> {
         task_mgr.create_task_from_editor(&config)?
       } else {
         let name = content.join(" ");
-        let mut task = task_mgr.create_task(name, "", Vec::new());
 
-        if ongoing {
-          task.change_state(State::Ongoing("ONGOING".to_owned()));
+        let state = if ongoing {
+          State::Ongoing(config.ongoing_state_name().to_owned())
         } else if done {
-          task.change_state(State::Done("DONE".to_owned()));
-        }
+          State::Done(config.done_state_name().to_owned())
+        } else {
+          State::Todo
+        };
 
-        task
+        task_mgr.create_task(name, "", state, Vec::new())
       };
 
       task_mgr.save(&config)?;
 
       println!("{}", task);
+    }
+
+    Command::List {
+      todo,
+      ongoing,
+      done,
+    } => {
+      let task_mgr = TaskManager::new_from_config(&config)?;
+
+      // filter the tasks; if no flag are passed, then we assume todo-filtered
+      let todo = !(todo || ongoing || done);
+      let tasks = task_mgr.tasks().filter(|task| match task.state() {
+        State::Todo => todo,
+        State::Ongoing(_) => ongoing,
+        State::Done(_) => done,
+      });
+
+      for task in tasks {
+        println!("{}", task);
+      }
     }
 
     _ => (),
