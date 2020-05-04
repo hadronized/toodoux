@@ -7,30 +7,33 @@ use serde_json as json;
 use std::error::Error;
 use std::fmt;
 use std::fs;
-use std::io::Write as _;
 
-use crate::config_file::ConfigFile;
+use crate::config::Config;
 
+#[derive(Debug, Deserialize, Serialize)]
 pub struct TaskManager {
   next_uid: UID,
+  tasks: Vec<Task>,
 }
 
 impl TaskManager {
-  pub fn new_from_config(config: &ConfigFile) -> Result<Self, Box<dyn Error>> {
-    let next_uid = fs::read_to_string(config.taskuid_path())?
-      .parse()
-      .map(UID)?;
+  pub fn new_from_config(config: &Config) -> Result<Self, Box<dyn Error>> {
+    let path = config.tasks_path();
 
-    Ok(TaskManager { next_uid })
+    if path.is_file() {
+      Ok(json::from_reader(fs::File::open(path)?)?)
+    } else {
+      let task_mgr = TaskManager {
+        next_uid: UID::default(),
+        tasks: Vec::new(),
+      };
+      Ok(task_mgr)
+    }
   }
 
-  fn increment_save_uid(&mut self, config: &ConfigFile) -> Result<(), Box<dyn Error>> {
+  fn increment_uid(&mut self) {
     let uid = self.next_uid.0 + 1;
-    let _ = write!(fs::File::create(config.taskuid_path())?, "{}", uid)?;
-
     self.next_uid = UID(uid);
-
-    Ok(())
   }
 
   pub fn create_task<N, C, L>(&mut self, name: N, content: C, labels: L) -> Task
@@ -40,6 +43,8 @@ impl TaskManager {
     L: Into<Vec<String>>,
   {
     let uid = self.next_uid;
+
+    self.increment_uid();
 
     Task {
       uid,
@@ -51,12 +56,27 @@ impl TaskManager {
     }
   }
 
-  pub fn save_task(&mut self, config: &ConfigFile, task: &Task) -> Result<(), Box<dyn Error>> {
-    let task_path = config.task_path(task.uid);
+  pub fn create_task_from_editor(&mut self, config: &Config) -> Result<Task, Box<dyn Error>> {
+    // spawn an editor if available and if not, simply return an error
+    let editor = std::env::var("EDITOR")?;
+    let task_path = config.editor_task_path();
+    let _ = std::process::Command::new(editor)
+      .arg(&task_path)
+      .spawn()?
+      .wait()?;
 
-    json::to_writer_pretty(fs::File::create(task_path)?, task)?;
+    // read the content of the file containing the task and delete it
+    let content = fs::read_to_string(&task_path)?;
+    fs::remove_file(task_path)?;
 
-    self.increment_save_uid(config)
+    Ok(self.create_task("<no name yet>", content, Vec::new()))
+  }
+
+  pub fn save(&mut self, config: &Config) -> Result<(), Box<dyn Error>> {
+    Ok(json::to_writer_pretty(
+      fs::File::create(config.tasks_path())?,
+      self,
+    )?)
   }
 }
 
@@ -123,6 +143,12 @@ pub struct UID(u32);
 impl From<UID> for u32 {
   fn from(uid: UID) -> Self {
     uid.0
+  }
+}
+
+impl Default for UID {
+  fn default() -> Self {
+    UID(0)
   }
 }
 

@@ -1,5 +1,5 @@
 mod cli;
-mod config_file;
+mod config;
 mod task;
 
 use colored::Colorize;
@@ -8,7 +8,7 @@ use std::io::{self, Write as _};
 use structopt::StructOpt;
 
 use crate::cli::Command;
-use crate::config_file::ConfigFile;
+use crate::config::Config;
 use crate::task::{State, TaskManager};
 
 fn print_introduction_text() {
@@ -50,7 +50,7 @@ fn print_no_file_information() {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-  match ConfigFile::get() {
+  match Config::get()? {
     Some(config) => initiate(config),
 
     None => {
@@ -81,7 +81,7 @@ fn main() -> Result<(), Box<dyn Error>> {
       };
 
       if must_create_config_file {
-        let config = ConfigFile::create().ok_or_else(|| "cannot create config file")?;
+        let config = Config::create().ok_or_else(|| "cannot create config file")?;
         config.save()?;
 
         Ok(())
@@ -93,18 +93,18 @@ fn main() -> Result<(), Box<dyn Error>> {
   }
 }
 
-fn initiate(config: ConfigFile) -> Result<(), Box<dyn Error>> {
+fn initiate(config: Config) -> Result<(), Box<dyn Error>> {
   match Command::from_args() {
     Command::Add {
       content,
       ongoing,
       done,
     } => {
-      if content.is_empty() {
-        todo!();
-      } else {
-        let mut task_mgr = TaskManager::new_from_config(&config)?;
+      let mut task_mgr = TaskManager::new_from_config(&config)?;
 
+      let task = if content.is_empty() {
+        task_mgr.create_task_from_editor(&config)?
+      } else {
         let name = content.join(" ");
         let mut task = task_mgr.create_task(name, "", Vec::new());
 
@@ -114,10 +114,12 @@ fn initiate(config: ConfigFile) -> Result<(), Box<dyn Error>> {
           task.change_state(State::Done("DONE".to_owned()));
         }
 
-        task_mgr.save_task(&config, &task)?;
+        task
+      };
 
-        println!("{}", task);
-      }
+      task_mgr.save(&config)?;
+
+      println!("{}", task);
     }
 
     _ => (),
