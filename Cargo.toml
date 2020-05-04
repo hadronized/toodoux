@@ -14,8 +14,12 @@ edition = "2018"
 [dependencies]
 chrono = { version = "0.4.11", features = ["serde"] }
 colored = "1.9"
-pulldown-cmark = "0.7"
+pulldown-cmark = { version = "0.7", optional = true }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 structopt = "0.3.13"
 toml = "0.5.6"
+
+[features]
+default = ["markdown"]
+markdown = ["pulldown-cmark"]

@@ -4,19 +4,24 @@ use chrono::{DateTime, Utc};
 use colored::Colorize;
 use serde::{Deserialize, Serialize};
 use serde_json as json;
+use std::collections::HashMap;
 use std::error::Error;
 use std::fmt;
 use std::fs;
 
 use crate::config::Config;
 
+/// Create, edit, remove and list tasks.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct TaskManager {
+  /// Next UID to use for the next task to create.
   next_uid: UID,
-  tasks: Vec<Task>,
+  /// List of known tasks.
+  tasks: HashMap<UID, Task>,
 }
 
 impl TaskManager {
+  /// Create a manager from a configuration.
   pub fn new_from_config(config: &Config) -> Result<Self, Box<dyn Error>> {
     let path = config.tasks_path();
 
@@ -25,18 +30,26 @@ impl TaskManager {
     } else {
       let task_mgr = TaskManager {
         next_uid: UID::default(),
-        tasks: Vec::new(),
+        tasks: HashMap::new(),
       };
       Ok(task_mgr)
     }
   }
 
+  /// Increment the next UID to use.
   fn increment_uid(&mut self) {
     let uid = self.next_uid.0 + 1;
     self.next_uid = UID(uid);
   }
 
-  pub fn create_task<N, C, L>(&mut self, name: N, content: C, state: State, labels: L) -> Task
+  /// Create a task.
+  pub fn create_task<N, C, L>(
+    &mut self,
+    name: N,
+    content: C,
+    state: State,
+    labels: L,
+  ) -> (UID, Task)
   where
     N: Into<String>,
     C: Into<String>,
@@ -47,7 +60,6 @@ impl TaskManager {
     self.increment_uid();
 
     let task = Task {
-      uid,
       name: name.into(),
       content: content.into(),
       state,
@@ -55,11 +67,24 @@ impl TaskManager {
       history: vec![Event::Created(Utc::now())],
     };
 
-    self.tasks.push(task.clone());
-    task
+    self.tasks.insert(uid, task.clone());
+    (uid, task)
   }
 
-  pub fn create_task_from_editor(&mut self, config: &Config) -> Result<Task, Box<dyn Error>> {
+  /// Create a task from the editor.
+  ///
+  /// This function will spawn an editor (via `$EDITOR`) to edit a task. When the file is saved and
+  /// the editor exits, this function will go on by reading the file to memory, delete the file and
+  /// extract the information from the file:
+  ///
+  /// - The name of the task, which is the title of the document.
+  /// - The content of the task, which is the body of the document.
+  /// - The labels of the task, which is the list at the right part of the title.
+  /// - The state of task, which is the identifier at the left part of the task.
+  pub fn create_task_from_editor(
+    &mut self,
+    config: &Config,
+  ) -> Result<(UID, Task), Box<dyn Error>> {
     // spawn an editor if available and if not, simply return an error
     let editor = std::env::var("EDITOR")?;
     let task_path = config.editor_task_path();
@@ -72,7 +97,12 @@ impl TaskManager {
     let content = fs::read_to_string(&task_path)?;
     fs::remove_file(task_path)?;
 
-    Ok(self.create_task("<no name yet>", content, State::Todo, Vec::new()))
+    Ok(self.create_task(
+      "<no name yet>",
+      content,
+      State::Todo(config.todo_state_name().to_owned()),
+      Vec::new(),
+    ))
   }
 
   pub fn save(&mut self, config: &Config) -> Result<(), Box<dyn Error>> {
@@ -82,15 +112,13 @@ impl TaskManager {
     )?)
   }
 
-  pub fn tasks(&self) -> impl Iterator<Item = &Task> {
-    self.tasks.iter()
+  pub fn tasks(&self) -> impl Iterator<Item = (UID, &Task)> {
+    self.tasks.iter().map(|(&k, v)| (k, v))
   }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Task {
-  /// UID.
-  uid: UID,
   /// Name of the task.
   name: String,
   /// Optional content of the task.
@@ -117,8 +145,7 @@ impl Task {
 impl fmt::Display for Task {
   fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
     let output = format!(
-      "{uid} {state} {name} {labels}",
-      uid = self.uid,
+      "{state} {name} {labels}",
       state = self.state,
       name = self.name.italic(),
       labels = "" // TODO
@@ -160,7 +187,7 @@ pub enum State {
   /// A “todo” state.
   ///
   /// Users will typically have “TODO“, “PLANNED”, etc.
-  Todo,
+  Todo(String),
   /// An “ongoing” state.
   ///
   /// Users will typically have “ONGOING”, “WIP”, etc.
@@ -174,8 +201,8 @@ pub enum State {
 impl fmt::Display for State {
   fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
     match *self {
-      State::Todo => write!(f, "{:8}", "TODO".purple().bold()),
-      State::Ongoing(ref s) => write!(f, "{:8}", s.green().bold()),
+      State::Todo(ref s) => write!(f, "{:8}", s.purple().bold()),
+      State::Ongoing(ref s) => write!(f, "{:8}", s.blue().bold()),
       State::Done(ref s) => write!(f, "{:8}", s.dimmed()),
     }
   }
@@ -200,6 +227,3 @@ pub enum Event {
   // },
   // RemoveDeadline(DateTime<Utc>),
 }
-
-// #542 TODO Name of the task here :label1,label2:
-// Eventually a description

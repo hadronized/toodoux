@@ -98,8 +98,9 @@ fn initiate(config: Config) -> Result<(), Box<dyn Error>> {
     // default command
     Command { subcmd: None } => {
       let task_mgr = TaskManager::new_from_config(&config)?;
-      for task in task_mgr.tasks() {
-        println!("{}", task);
+      for (uid, task) in task_mgr.tasks() {
+        // FIXME: uid + view
+        println!("{} {}", uid, task);
       }
     }
 
@@ -111,7 +112,7 @@ fn initiate(config: Config) -> Result<(), Box<dyn Error>> {
       } => {
         let mut task_mgr = TaskManager::new_from_config(&config)?;
 
-        let task = if content.is_empty() {
+        let (uid, task) = if content.is_empty() {
           task_mgr.create_task_from_editor(&config)?
         } else {
           let name = content.join(" ");
@@ -121,7 +122,7 @@ fn initiate(config: Config) -> Result<(), Box<dyn Error>> {
           } else if done {
             State::Done(config.done_state_name().to_owned())
           } else {
-            State::Todo
+            State::Todo(config.todo_state_name().to_owned())
           };
 
           task_mgr.create_task(name, "", state, Vec::new())
@@ -129,26 +130,32 @@ fn initiate(config: Config) -> Result<(), Box<dyn Error>> {
 
         task_mgr.save(&config)?;
 
-        println!("{}", task);
+        // FIXME: view
+        println!("{} {}", uid, task);
       }
 
       SubCommand::List {
-        todo,
-        ongoing,
+        mut todo,
+        mut ongoing,
         done,
       } => {
         let task_mgr = TaskManager::new_from_config(&config)?;
 
-        // filter the tasks; if no flag are passed, then we assume todo-filtered
-        let todo = !(todo || ongoing || done);
-        let tasks = task_mgr.tasks().filter(|task| match task.state() {
-          State::Todo => todo,
+        // filter the tasks; if no flag are passed, then we assume todo and ongoing
+        if !(todo || ongoing || done) {
+          todo = true;
+          ongoing = true;
+        }
+
+        let tasks = task_mgr.tasks().filter(|(_, task)| match task.state() {
+          State::Todo(_) => todo,
           State::Ongoing(_) => ongoing,
           State::Done(_) => done,
         });
 
-        for task in tasks {
-          println!("{}", task);
+        for (uid, task) in tasks {
+          // FIXME: uid + view
+          println!("{} {}", uid, task);
         }
       }
 
