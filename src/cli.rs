@@ -7,7 +7,13 @@ use structopt::StructOpt;
   name = "toodoux",
   about = "A modern task / todo / note management tool."
 )]
-pub enum Command {
+pub struct Command {
+  #[structopt(subcommand)]
+  pub subcmd: Option<SubCommand>,
+}
+
+#[derive(Debug, StructOpt)]
+pub enum SubCommand {
   /// Add a task.
   Add {
     /// Mark the item as ONGOING.

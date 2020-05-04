@@ -7,7 +7,7 @@ use std::error::Error;
 use std::io::{self, Write as _};
 use structopt::StructOpt;
 
-use crate::cli::Command;
+use crate::cli::{Command, SubCommand};
 use crate::config::Config;
 use crate::task::{State, TaskManager};
 
@@ -95,55 +95,65 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 fn initiate(config: Config) -> Result<(), Box<dyn Error>> {
   match Command::from_args() {
-    Command::Add {
-      content,
-      ongoing,
-      done,
-    } => {
-      let mut task_mgr = TaskManager::new_from_config(&config)?;
-
-      let task = if content.is_empty() {
-        task_mgr.create_task_from_editor(&config)?
-      } else {
-        let name = content.join(" ");
-
-        let state = if ongoing {
-          State::Ongoing(config.ongoing_state_name().to_owned())
-        } else if done {
-          State::Done(config.done_state_name().to_owned())
-        } else {
-          State::Todo
-        };
-
-        task_mgr.create_task(name, "", state, Vec::new())
-      };
-
-      task_mgr.save(&config)?;
-
-      println!("{}", task);
-    }
-
-    Command::List {
-      todo,
-      ongoing,
-      done,
-    } => {
+    // default command
+    Command { subcmd: None } => {
       let task_mgr = TaskManager::new_from_config(&config)?;
-
-      // filter the tasks; if no flag are passed, then we assume todo-filtered
-      let todo = !(todo || ongoing || done);
-      let tasks = task_mgr.tasks().filter(|task| match task.state() {
-        State::Todo => todo,
-        State::Ongoing(_) => ongoing,
-        State::Done(_) => done,
-      });
-
-      for task in tasks {
+      for task in task_mgr.tasks() {
         println!("{}", task);
       }
     }
 
-    _ => (),
+    Command { subcmd: Some(cmd) } => match cmd {
+      SubCommand::Add {
+        content,
+        ongoing,
+        done,
+      } => {
+        let mut task_mgr = TaskManager::new_from_config(&config)?;
+
+        let task = if content.is_empty() {
+          task_mgr.create_task_from_editor(&config)?
+        } else {
+          let name = content.join(" ");
+
+          let state = if ongoing {
+            State::Ongoing(config.ongoing_state_name().to_owned())
+          } else if done {
+            State::Done(config.done_state_name().to_owned())
+          } else {
+            State::Todo
+          };
+
+          task_mgr.create_task(name, "", state, Vec::new())
+        };
+
+        task_mgr.save(&config)?;
+
+        println!("{}", task);
+      }
+
+      SubCommand::List {
+        todo,
+        ongoing,
+        done,
+      } => {
+        let task_mgr = TaskManager::new_from_config(&config)?;
+
+        // filter the tasks; if no flag are passed, then we assume todo-filtered
+        let todo = !(todo || ongoing || done);
+        let tasks = task_mgr.tasks().filter(|task| match task.state() {
+          State::Todo => todo,
+          State::Ongoing(_) => ongoing,
+          State::Done(_) => done,
+        });
+
+        for task in tasks {
+          println!("{}", task);
+        }
+      }
+
+      _ => (),
+    },
   }
 
   Ok(())
