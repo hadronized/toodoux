@@ -134,6 +134,43 @@ fn initiate(config: Config) -> Result<(), Box<dyn Error>> {
         println!("{} {}", uid, task);
       }
 
+      SubCommand::Edit {
+        uid,
+        name,
+        todo,
+        ongoing,
+        done,
+      } => {
+        let mut task_mgr = TaskManager::new_from_config(&config)?;
+        match task_mgr.get_mut(&uid) {
+          Some(task) => {
+            // update the name
+            if let Some(name) = name {
+              task.change_name(name.join(" "));
+            }
+
+            // update the state
+            if todo {
+              task.change_state(State::Todo(config.todo_state_name().to_owned()));
+            }
+
+            if ongoing {
+              task.change_state(State::Ongoing(config.ongoing_state_name().to_owned()));
+            }
+
+            if done {
+              task.change_state(State::Done(config.done_state_name().to_owned()));
+            }
+
+            task_mgr.save(&config);
+          }
+
+          None => {
+            eprintln!("no such task {}", uid);
+          }
+        }
+      }
+
       SubCommand::Remove { .. } => todo!(),
 
       SubCommand::List {

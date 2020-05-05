@@ -8,6 +8,7 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::fmt;
 use std::fs;
+use std::str::FromStr;
 
 use crate::config::Config;
 
@@ -115,6 +116,14 @@ impl TaskManager {
   pub fn tasks(&self) -> impl Iterator<Item = (UID, &Task)> {
     self.tasks.iter().map(|(&k, v)| (k, v))
   }
+
+  pub fn get(&self, uid: &UID) -> Option<&Task> {
+    self.tasks.get(uid)
+  }
+
+  pub fn get_mut(&mut self, uid: &UID) -> Option<&mut Task> {
+    self.tasks.get_mut(uid)
+  }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -138,6 +147,13 @@ impl Task {
 
   pub fn state(&self) -> &State {
     &self.state
+  }
+
+  pub fn change_name<N>(&mut self, name: N)
+  where
+    N: Into<String>,
+  {
+    self.name = name.into()
   }
 
   pub fn change_state(&mut self, state: State) {
@@ -176,6 +192,14 @@ impl From<UID> for u32 {
 impl Default for UID {
   fn default() -> Self {
     UID(0)
+  }
+}
+
+impl FromStr for UID {
+  type Err = <u32 as FromStr>::Err;
+
+  fn from_str(s: &str) -> Result<Self, Self::Err> {
+    u32::from_str(s).map(UID)
   }
 }
 

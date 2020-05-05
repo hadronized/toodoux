@@ -2,6 +2,8 @@
 
 use structopt::StructOpt;
 
+use crate::task::UID;
+
 #[derive(Debug, StructOpt)]
 #[structopt(
   name = "toodoux",
@@ -29,6 +31,28 @@ pub enum SubCommand {
     /// If nothing is set, an interactive prompt is spawned for you to enter the content
     /// of what to do.
     content: Vec<String>,
+  },
+  /// Edit a task.
+  Edit {
+    /// UID of the task.
+    #[structopt(long)]
+    uid: UID,
+
+    /// Change the name of the task.
+    #[structopt(short, long)]
+    name: Option<Vec<String>>,
+
+    /// Change the state of the task to TODO.
+    #[structopt(short, long)]
+    todo: bool,
+
+    /// Change the state of the task to ONGOING.
+    #[structopt(short, long)]
+    ongoing: bool,
+
+    /// Change the state of the task to DONE.
+    #[structopt(short, long)]
+    done: bool,
   },
   /// Remove a task.
   Remove {
