@@ -39,15 +39,19 @@ pub enum SubCommand {
   /// List all the tasks.
   List {
     /// Filter with TODO items.
-    #[structopt(long)]
+    #[structopt(short, long)]
     todo: bool,
 
     /// Filter with ONGOING items.
-    #[structopt(long)]
+    #[structopt(short, long)]
     ongoing: bool,
 
     /// Filter with DONE items.
-    #[structopt(long)]
+    #[structopt(short, long)]
     done: bool,
+
+    /// Show the content of each listed task, if any.
+    #[structopt(short, long)]
+    content: bool,
   },
 }

@@ -132,6 +132,10 @@ pub struct Task {
 }
 
 impl Task {
+  pub fn content(&self) -> &str {
+    &self.content
+  }
+
   pub fn state(&self) -> &State {
     &self.state
   }
@@ -201,9 +205,9 @@ pub enum State {
 impl fmt::Display for State {
   fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
     match *self {
-      State::Todo(ref s) => write!(f, "{:8}", s.purple().bold()),
-      State::Ongoing(ref s) => write!(f, "{:8}", s.blue().bold()),
-      State::Done(ref s) => write!(f, "{:8}", s.dimmed()),
+      State::Todo(ref s) => write!(f, "{:>8}", s.purple().bold()),
+      State::Ongoing(ref s) => write!(f, "{:>8}", s.blue().bold()),
+      State::Done(ref s) => write!(f, "{:>8}", s.dimmed()),
     }
   }
 }

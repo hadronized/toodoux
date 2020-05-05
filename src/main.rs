@@ -134,10 +134,13 @@ fn initiate(config: Config) -> Result<(), Box<dyn Error>> {
         println!("{} {}", uid, task);
       }
 
+      SubCommand::Remove { .. } => todo!(),
+
       SubCommand::List {
         mut todo,
         mut ongoing,
         done,
+        content,
       } => {
         let task_mgr = TaskManager::new_from_config(&config)?;
 
@@ -156,6 +159,14 @@ fn initiate(config: Config) -> Result<(), Box<dyn Error>> {
         for (uid, task) in tasks {
           // FIXME: uid + view
           println!("{} {}", uid, task);
+
+          if content {
+            let task_content = task.content();
+
+            if !task_content.is_empty() {
+              println!("{}", task_content);
+            }
+          }
         }
       }
 
