@@ -8,9 +8,15 @@ notes, sort them, and add, edit, remove and list what’s around.
 ## Feature list
 
 - [ ] Basic task management.
-  - [ ] Add new tasks.
+  - [x] Add new tasks.
     - [x] CLI mode.
-    - [ ] Editor mode.
+    - [x] Editor mode.
+    - [x] Name support.
+    - [x] Content support.
+    - [x] State support.
+    - [ ] Labels support.
+    - [ ] Priorities support.
+    - [ ] Projects support.
   - [ ] List tasks.
     - [x] List all todo and on-going tasks.
     - [x] List tasks by filtering by states.
@@ -26,8 +32,8 @@ notes, sort them, and add, edit, remove and list what’s around.
     - [ ] Remove via fuzzy-searching.
     - [ ] Interactive TUI.
   - [ ] Edit tasks.
-    - [ ] Change name in CLI.
-    - [ ] Change state in CLI.
+    - [x] Change name in CLI.
+    - [x] Change state in CLI.
     - [ ] Change labels in CLI.
     - [ ] Change priorities in CLI.
     - [ ] Change schedule in CLI.
