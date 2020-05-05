@@ -139,7 +139,8 @@ fn initiate(config: Config) -> Result<(), Box<dyn Error>> {
       SubCommand::List {
         mut todo,
         mut ongoing,
-        done,
+        mut done,
+        all,
         content,
       } => {
         let task_mgr = TaskManager::new_from_config(&config)?;
@@ -148,6 +149,12 @@ fn initiate(config: Config) -> Result<(), Box<dyn Error>> {
         if !(todo || ongoing || done) {
           todo = true;
           ongoing = true;
+        }
+
+        if all {
+          todo = true;
+          ongoing = true;
+          done = true;
         }
 
         let tasks = task_mgr.tasks().filter(|(_, task)| match task.state() {

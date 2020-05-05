@@ -50,6 +50,10 @@ pub enum SubCommand {
     #[structopt(short, long)]
     done: bool,
 
+    /// Do not filter the items and show them all.
+    #[structopt(short, long)]
+    all: bool,
+
     /// Show the content of each listed task, if any.
     #[structopt(short, long)]
     content: bool,
