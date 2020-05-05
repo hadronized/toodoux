@@ -98,7 +98,12 @@ fn initiate(config: Config) -> Result<(), Box<dyn Error>> {
     // default command
     Command { subcmd: None } => {
       let task_mgr = TaskManager::new_from_config(&config)?;
-      for (uid, task) in task_mgr.tasks() {
+      let tasks = task_mgr.tasks().filter(|(_, task)| match task.state() {
+        State::Todo(..) | State::Ongoing(..) => true,
+        _ => false,
+      });
+
+      for (uid, task) in tasks {
         // FIXME: uid + view
         println!("{} {}", uid, task);
       }
