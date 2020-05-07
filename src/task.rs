@@ -141,6 +141,10 @@ pub struct Task {
 }
 
 impl Task {
+  pub fn name(&self) -> &str {
+    &self.name
+  }
+
   pub fn content(&self) -> &str {
     &self.content
   }
