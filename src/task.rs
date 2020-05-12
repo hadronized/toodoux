@@ -113,8 +113,8 @@ impl TaskManager {
     )?)
   }
 
-  pub fn tasks(&self) -> impl Iterator<Item = (UID, &Task)> {
-    self.tasks.iter().map(|(&k, v)| (k, v))
+  pub fn tasks(&self) -> impl Iterator<Item = (&UID, &Task)> {
+    self.tasks.iter()
   }
 
   pub fn get(&self, uid: &UID) -> Option<&Task> {
@@ -151,6 +151,17 @@ impl Task {
 
   pub fn state(&self) -> &State {
     &self.state
+  }
+
+  pub fn creation_date(&self) -> Option<&DateTime<Utc>> {
+    for event in self.history.iter() {
+      match event {
+        Event::Created(ref date) => return Some(date),
+        _ => (),
+      }
+    }
+
+    None
   }
 
   pub fn change_name<N>(&mut self, name: N)

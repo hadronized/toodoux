@@ -1,6 +1,8 @@
 mod cli;
 mod config;
+mod markup;
 mod task;
+mod view;
 
 use colored::Colorize;
 use std::error::Error;
@@ -10,6 +12,7 @@ use structopt::StructOpt;
 use crate::cli::{Command, SubCommand};
 use crate::config::Config;
 use crate::task::{State, TaskManager};
+use crate::view::View as _;
 
 fn print_introduction_text() {
   println!(
@@ -98,15 +101,12 @@ fn initiate(config: Config) -> Result<(), Box<dyn Error>> {
     // default command
     Command { subcmd: None } => {
       let task_mgr = TaskManager::new_from_config(&config)?;
-      let tasks = task_mgr.tasks().filter(|(_, task)| match task.state() {
-        State::Todo(..) | State::Ongoing(..) => true,
+      let mut view = view::cli::CLIView::new(&config);
+
+      view.display_filtered_tasks(task_mgr.tasks(), |_, task| match task.state() {
+        State::Todo(_) | State::Ongoing(_) => true,
         _ => false,
       });
-
-      for (uid, task) in tasks {
-        // FIXME: uid + view
-        println!("{} {}", uid, task);
-      }
     }
 
     Command { subcmd: Some(cmd) } => match cmd {
@@ -186,6 +186,7 @@ fn initiate(config: Config) -> Result<(), Box<dyn Error>> {
         content,
       } => {
         let task_mgr = TaskManager::new_from_config(&config)?;
+        let mut view = view::cli::CLIView::new(&config);
 
         // filter the tasks; if no flag are passed, then we assume todo and ongoing
         if !(todo || ongoing || done) {
@@ -199,24 +200,11 @@ fn initiate(config: Config) -> Result<(), Box<dyn Error>> {
           done = true;
         }
 
-        let tasks = task_mgr.tasks().filter(|(_, task)| match task.state() {
+        view.display_filtered_tasks(task_mgr.tasks(), |_, task| match task.state() {
           State::Todo(_) => todo,
           State::Ongoing(_) => ongoing,
           State::Done(_) => done,
         });
-
-        for (uid, task) in tasks {
-          // FIXME: uid + view
-          println!("{} {}", uid, task);
-
-          if content {
-            let task_content = task.content();
-
-            if !task_content.is_empty() {
-              println!("{}", task_content);
-            }
-          }
-        }
       }
 
       _ => (),

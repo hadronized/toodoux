@@ -35,7 +35,6 @@ pub enum SubCommand {
   /// Edit a task.
   Edit {
     /// UID of the task.
-    #[structopt(long)]
     uid: UID,
 
     /// Change the name of the task.
