@@ -17,6 +17,7 @@ pub struct Command {
 #[derive(Debug, StructOpt)]
 pub enum SubCommand {
   /// Add a task.
+  #[structopt(visible_aliases = &["a"])]
   Add {
     /// Mark the item as ONGOING.
     #[structopt(long)]
@@ -33,6 +34,7 @@ pub enum SubCommand {
     content: Vec<String>,
   },
   /// Edit a task.
+  #[structopt(visible_aliases = &["e", "ed"])]
   Edit {
     /// UID of the task.
     uid: UID,
@@ -54,12 +56,14 @@ pub enum SubCommand {
     done: bool,
   },
   /// Remove a task.
+  #[structopt(visible_aliases = &["r", "rm"])]
   Remove {
     /// Remove all the tasks.
     #[structopt(short, long)]
     all: bool,
   },
   /// List all the tasks.
+  #[structopt(visible_aliases = &["l", "ls"])]
   List {
     /// Filter with TODO items.
     #[structopt(short, long)]
