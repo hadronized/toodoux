@@ -24,8 +24,8 @@ pub struct MainConfig {
 
 impl Config {
   fn get_config_path() -> Result<PathBuf, Box<dyn Error>> {
-    let home = std::env::var("HOME")?;
-    let path = Path::new(&home).join(".toodoux");
+    let home = dirs::config_dir().ok_or("cannot find configuration directory")?;
+    let path = Path::new(&home).join("toodoux");
 
     Ok(path)
   }
