@@ -118,7 +118,8 @@ fn initiate(config: Config) -> Result<(), Box<dyn Error>> {
         let mut task_mgr = TaskManager::new_from_config(&config)?;
 
         let (uid, task) = if content.is_empty() {
-          task_mgr.create_task_from_editor(&config)?
+          let markup = markup::markdown::Markdown::new();
+          task_mgr.create_task_from_editor(&config, markup)?
         } else {
           let name = content.join(" ");
 

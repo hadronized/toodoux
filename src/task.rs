@@ -11,6 +11,7 @@ use std::fs;
 use std::str::FromStr;
 
 use crate::config::Config;
+use crate::markup::Markup;
 
 /// Create, edit, remove and list tasks.
 #[derive(Debug, Deserialize, Serialize)]
@@ -85,6 +86,7 @@ impl TaskManager {
   pub fn create_task_from_editor(
     &mut self,
     config: &Config,
+    markup: impl Markup,
   ) -> Result<(UID, Task), Box<dyn Error>> {
     // spawn an editor if available and if not, simply return an error
     let editor = std::env::var("EDITOR")?;
@@ -98,12 +100,7 @@ impl TaskManager {
     let content = fs::read_to_string(&task_path)?;
     fs::remove_file(task_path)?;
 
-    Ok(self.create_task(
-      "<no name yet>",
-      content,
-      State::Todo(config.todo_state_name().to_owned()),
-      Vec::new(),
-    ))
+    Ok(markup.from_str(content, config, self)?)
   }
 
   pub fn save(&mut self, config: &Config) -> Result<(), Box<dyn Error>> {
