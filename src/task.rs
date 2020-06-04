@@ -83,14 +83,18 @@ impl TaskManager {
   /// - The content of the task, which is the body of the document.
   /// - The labels of the task, which is the list at the right part of the title.
   /// - The state of task, which is the identifier at the left part of the task.
-  pub fn create_task_from_editor(
+  pub fn create_task_from_editor<Mrkp>(
     &mut self,
     config: &Config,
-    markup: impl Markup,
-  ) -> Result<(UID, Task), Box<dyn Error>> {
+    markup: Mrkp,
+  ) -> Result<(UID, Task), Box<dyn Error>>
+  where
+    Mrkp: Markup,
+  {
     // spawn an editor if available and if not, simply return an error
     let editor = std::env::var("EDITOR")?;
-    let task_path = config.editor_task_path();
+    let mut task_path = config.editor_task_path();
+    task_path.set_extension(Mrkp::EXT[0]);
     let _ = std::process::Command::new(editor)
       .arg(&task_path)
       .spawn()?

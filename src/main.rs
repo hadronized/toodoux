@@ -150,6 +150,12 @@ fn initiate(config: Config) -> Result<(), Box<dyn Error>> {
         let mut task_mgr = TaskManager::new_from_config(&config)?;
         match task_mgr.get_mut(&uid) {
           Some(task) => {
+            let mut interactive = name.is_none() && !todo && !ongoing && !done;
+
+            if interactive {
+              println!("starting interactive mode");
+            }
+
             // update the name
             if let Some(name) = name {
               task.change_name(name.join(" "));
