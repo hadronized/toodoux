@@ -1,5 +1,6 @@
 //! CLI options.
 
+use std::path::PathBuf;
 use structopt::StructOpt;
 
 use crate::task::UID;
@@ -12,6 +13,8 @@ use crate::task::UID;
 pub struct Command {
   #[structopt(subcommand)]
   pub subcmd: Option<SubCommand>,
+  #[structopt(long, short)]
+  pub config: Option<PathBuf>,
 }
 
 #[derive(Debug, StructOpt)]

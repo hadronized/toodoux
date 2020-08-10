@@ -24,10 +24,24 @@ pub struct MainConfig {
 
 impl Config {
   fn get_config_path() -> Result<PathBuf, Box<dyn Error>> {
+    log::trace!("getting configuration root path from the environment");
     let home = dirs::config_dir().ok_or("cannot find configuration directory")?;
     let path = Path::new(&home).join("toodoux");
 
     Ok(path)
+  }
+
+  pub fn from_dir(path: impl AsRef<Path>) -> Result<Option<Self>, Box<dyn Error>> {
+    let path = path.as_ref();
+
+    log::trace!("reading configuration from directory {}", path.display());
+    if path.is_dir() {
+      let content = fs::read_to_string(path.join("config.toml"))?;
+      let parsed = toml::from_str(&content)?;
+      Ok(parsed)
+    } else {
+      Ok(None)
+    }
   }
 
   pub fn root_dir(&self) -> &Path {
@@ -60,14 +74,7 @@ impl Config {
 
   pub fn get() -> Result<Option<Self>, Box<dyn Error>> {
     let path = Self::get_config_path()?;
-
-    if path.is_dir() {
-      let content = fs::read_to_string(path.join("config.toml"))?;
-      let parsed = toml::from_str(&content)?;
-      Ok(Some(parsed))
-    } else {
-      Ok(None)
-    }
+    Self::from_dir(path)
   }
 
   pub fn create() -> Option<Self> {

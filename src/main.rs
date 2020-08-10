@@ -53,10 +53,29 @@ fn print_no_file_information() {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-  match Config::get()? {
-    Some(config) => initiate(config),
+  let Command { subcmd, config } = Command::from_args();
+
+  // initialize the logger
+  env_logger::init();
+  log::trace!("initialize logger");
+
+  // override the config if explicitly passed a configuration path; otherwise, use the one by
+  // default
+  let config = config.map_or_else(Config::get, Config::from_dir)?;
+  log::trace!("configuration read");
+
+  match config {
+    Some(config) => {
+      log::info!(
+        "running on configuration at {}",
+        config.root_dir().display()
+      );
+      initiate(config, subcmd)
+    }
 
     None => {
+      log::warn!("no configuration detected");
+
       let mut input = String::new();
 
       // initiate configuration file creation wizzard and create the configuration file
@@ -96,10 +115,10 @@ fn main() -> Result<(), Box<dyn Error>> {
   }
 }
 
-fn initiate(config: Config) -> Result<(), Box<dyn Error>> {
-  match Command::from_args() {
+fn initiate(config: Config, subcmd: Option<SubCommand>) -> Result<(), Box<dyn Error>> {
+  match subcmd {
     // default command
-    Command { subcmd: None } => {
+    None => {
       let task_mgr = TaskManager::new_from_config(&config)?;
       let mut view = view::cli::CLIView::new(&config);
 
@@ -109,7 +128,7 @@ fn initiate(config: Config) -> Result<(), Box<dyn Error>> {
       });
     }
 
-    Command { subcmd: Some(cmd) } => match cmd {
+    Some(cmd) => match cmd {
       SubCommand::Add {
         content,
         ongoing,
@@ -117,6 +136,7 @@ fn initiate(config: Config) -> Result<(), Box<dyn Error>> {
       } => {
         let mut task_mgr = TaskManager::new_from_config(&config)?;
 
+        // interactive mode if no content is provided
         let (uid, task) = if content.is_empty() {
           let markup = markup::markdown::Markdown::new();
           task_mgr.create_task_from_editor(&config, markup)?
@@ -135,9 +155,6 @@ fn initiate(config: Config) -> Result<(), Box<dyn Error>> {
         };
 
         task_mgr.save(&config)?;
-
-        // FIXME: view
-        println!("{} {}", uid, task);
       }
 
       SubCommand::Edit {
