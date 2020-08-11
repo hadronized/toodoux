@@ -32,13 +32,11 @@ impl Config {
   }
 
   pub fn from_dir(path: impl AsRef<Path>) -> Result<Option<Self>, Box<dyn Error>> {
-    let path = path.as_ref();
+    let path = path.as_ref().join("config.toml");
 
-    log::trace!("reading configuration from directory {}", path.display());
-    if path.is_dir() {
-      let path = path.join("config.toml");
+    log::trace!("reading configuration from {}", path.display());
+    if path.is_file() {
       let content = fs::read_to_string(&path)?;
-      log::trace!("parsing from {}", path.display());
       let parsed = toml::from_str(&content)?;
       Ok(Some(parsed))
     } else {
@@ -79,8 +77,10 @@ impl Config {
     Self::from_dir(path)
   }
 
-  pub fn create() -> Option<Self> {
-    let root_dir = Self::get_config_path().ok()?;
+  pub fn create(path: Option<&Path>) -> Option<Self> {
+    let root_dir = path
+      .map(|p| p.to_owned())
+      .or(Self::get_config_path().ok())?;
     let todo_state_name = "TODO".to_owned();
     let ongoing_state_name = "ONGOING".to_owned();
     let done_state_name = "DONE".to_owned();
@@ -93,6 +93,8 @@ impl Config {
     };
 
     let config = Config { main };
+
+    log::trace!("creating new configuration:\n{:#?}", config);
 
     Some(config)
   }

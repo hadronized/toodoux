@@ -7,6 +7,7 @@ mod view;
 use colored::Colorize;
 use std::error::Error;
 use std::io::{self, Write as _};
+use std::path::Path;
 use structopt::StructOpt;
 
 use crate::cli::{Command, SubCommand};
@@ -56,21 +57,45 @@ fn main() -> Result<(), Box<dyn Error>> {
   let Command { subcmd, config } = Command::from_args();
 
   // initialize the logger
+  log::trace!("initializing logger");
   env_logger::init();
-  log::trace!("initialize logger");
 
   // override the config if explicitly passed a configuration path; otherwise, use the one by
   // default
-  let config = config.map_or_else(Config::get, Config::from_dir)?;
-  log::trace!("configuration read");
+  log::trace!("initializing configuration");
+  match config {
+    Some(path) => initiate_explicit_config(path, subcmd),
+    None => initiate(subcmd),
+  }
+}
 
+fn initiate_explicit_config(
+  config_path: impl AsRef<Path>,
+  subcmd: Option<SubCommand>,
+) -> Result<(), Box<dyn Error>> {
+  let path = config_path.as_ref();
+  let config = Config::from_dir(path)?;
+
+  initiate_with_config(Some(path), config, subcmd)
+}
+
+fn initiate(subcmd: Option<SubCommand>) -> Result<(), Box<dyn Error>> {
+  let config = Config::get()?;
+  initiate_with_config(None, config, subcmd)
+}
+
+fn initiate_with_config(
+  path: Option<&Path>,
+  config: Option<Config>,
+  subcmd: Option<SubCommand>,
+) -> Result<(), Box<dyn Error>> {
   match config {
     Some(config) => {
       log::info!(
         "running on configuration at {}",
         config.root_dir().display()
       );
-      initiate(config, subcmd)
+      run_subcmd(config, subcmd)
     }
 
     None => {
@@ -103,7 +128,7 @@ fn main() -> Result<(), Box<dyn Error>> {
       };
 
       if must_create_config_file {
-        let config = Config::create().ok_or_else(|| "cannot create config file")?;
+        let config = Config::create(path).ok_or_else(|| "cannot create config file")?;
         config.save()?;
 
         Ok(())
@@ -115,7 +140,7 @@ fn main() -> Result<(), Box<dyn Error>> {
   }
 }
 
-fn initiate(config: Config, subcmd: Option<SubCommand>) -> Result<(), Box<dyn Error>> {
+fn run_subcmd(config: Config, subcmd: Option<SubCommand>) -> Result<(), Box<dyn Error>> {
   match subcmd {
     // default command
     None => {
