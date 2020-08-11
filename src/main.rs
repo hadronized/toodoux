@@ -7,6 +7,7 @@ mod view;
 use colored::Colorize;
 use std::error::Error;
 use std::io::{self, Write as _};
+use std::path::Path;
 use structopt::StructOpt;
 
 use crate::cli::{Command, SubCommand};
@@ -53,10 +54,53 @@ fn print_no_file_information() {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-  match Config::get()? {
-    Some(config) => initiate(config),
+  let Command { subcmd, config } = Command::from_args();
+
+  // initialize the logger
+  log::trace!("initializing logger");
+  env_logger::init();
+
+  // override the config if explicitly passed a configuration path; otherwise, use the one by
+  // default
+  log::trace!("initializing configuration");
+  match config {
+    Some(path) => initiate_explicit_config(path, subcmd),
+    None => initiate(subcmd),
+  }
+}
+
+fn initiate_explicit_config(
+  config_path: impl AsRef<Path>,
+  subcmd: Option<SubCommand>,
+) -> Result<(), Box<dyn Error>> {
+  let path = config_path.as_ref();
+  let config = Config::from_dir(path)?;
+
+  initiate_with_config(Some(path), config, subcmd)
+}
+
+fn initiate(subcmd: Option<SubCommand>) -> Result<(), Box<dyn Error>> {
+  let config = Config::get()?;
+  initiate_with_config(None, config, subcmd)
+}
+
+fn initiate_with_config(
+  path: Option<&Path>,
+  config: Option<Config>,
+  subcmd: Option<SubCommand>,
+) -> Result<(), Box<dyn Error>> {
+  match config {
+    Some(config) => {
+      log::info!(
+        "running on configuration at {}",
+        config.root_dir().display()
+      );
+      run_subcmd(config, subcmd)
+    }
 
     None => {
+      log::warn!("no configuration detected");
+
       let mut input = String::new();
 
       // initiate configuration file creation wizzard and create the configuration file
@@ -84,7 +128,7 @@ fn main() -> Result<(), Box<dyn Error>> {
       };
 
       if must_create_config_file {
-        let config = Config::create().ok_or_else(|| "cannot create config file")?;
+        let config = Config::create(path).ok_or_else(|| "cannot create config file")?;
         config.save()?;
 
         Ok(())
@@ -96,10 +140,10 @@ fn main() -> Result<(), Box<dyn Error>> {
   }
 }
 
-fn initiate(config: Config) -> Result<(), Box<dyn Error>> {
-  match Command::from_args() {
+fn run_subcmd(config: Config, subcmd: Option<SubCommand>) -> Result<(), Box<dyn Error>> {
+  match subcmd {
     // default command
-    Command { subcmd: None } => {
+    None => {
       let task_mgr = TaskManager::new_from_config(&config)?;
       let mut view = view::cli::CLIView::new(&config);
 
@@ -109,7 +153,7 @@ fn initiate(config: Config) -> Result<(), Box<dyn Error>> {
       });
     }
 
-    Command { subcmd: Some(cmd) } => match cmd {
+    Some(cmd) => match cmd {
       SubCommand::Add {
         content,
         ongoing,
@@ -117,8 +161,10 @@ fn initiate(config: Config) -> Result<(), Box<dyn Error>> {
       } => {
         let mut task_mgr = TaskManager::new_from_config(&config)?;
 
+        // interactive mode if no content is provided
         let (uid, task) = if content.is_empty() {
-          task_mgr.create_task_from_editor(&config)?
+          let markup = markup::markdown::Markdown::new();
+          task_mgr.create_task_from_editor(&config, markup)?
         } else {
           let name = content.join(" ");
 
@@ -134,9 +180,6 @@ fn initiate(config: Config) -> Result<(), Box<dyn Error>> {
         };
 
         task_mgr.save(&config)?;
-
-        // FIXME: view
-        println!("{} {}", uid, task);
       }
 
       SubCommand::Edit {
@@ -149,6 +192,12 @@ fn initiate(config: Config) -> Result<(), Box<dyn Error>> {
         let mut task_mgr = TaskManager::new_from_config(&config)?;
         match task_mgr.get_mut(&uid) {
           Some(task) => {
+            let mut interactive = name.is_none() && !todo && !ongoing && !done;
+
+            if interactive {
+              println!("starting interactive mode");
+            }
+
             // update the name
             if let Some(name) = name {
               task.change_name(name.join(" "));

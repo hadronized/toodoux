@@ -11,6 +11,7 @@ use std::fs;
 use std::str::FromStr;
 
 use crate::config::Config;
+use crate::markup::Markup;
 
 /// Create, edit, remove and list tasks.
 #[derive(Debug, Deserialize, Serialize)]
@@ -82,13 +83,18 @@ impl TaskManager {
   /// - The content of the task, which is the body of the document.
   /// - The labels of the task, which is the list at the right part of the title.
   /// - The state of task, which is the identifier at the left part of the task.
-  pub fn create_task_from_editor(
+  pub fn create_task_from_editor<Mrkp>(
     &mut self,
     config: &Config,
-  ) -> Result<(UID, Task), Box<dyn Error>> {
+    markup: Mrkp,
+  ) -> Result<(UID, Task), Box<dyn Error>>
+  where
+    Mrkp: Markup,
+  {
     // spawn an editor if available and if not, simply return an error
     let editor = std::env::var("EDITOR")?;
-    let task_path = config.editor_task_path();
+    let mut task_path = config.editor_task_path();
+    task_path.set_extension(Mrkp::EXT[0]);
     let _ = std::process::Command::new(editor)
       .arg(&task_path)
       .spawn()?
@@ -98,12 +104,7 @@ impl TaskManager {
     let content = fs::read_to_string(&task_path)?;
     fs::remove_file(task_path)?;
 
-    Ok(self.create_task(
-      "<no name yet>",
-      content,
-      State::Todo(config.todo_state_name().to_owned()),
-      Vec::new(),
-    ))
+    Ok(markup.from_str(content, config, self)?)
   }
 
   pub fn save(&mut self, config: &Config) -> Result<(), Box<dyn Error>> {
