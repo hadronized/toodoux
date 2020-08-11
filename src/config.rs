@@ -36,9 +36,11 @@ impl Config {
 
     log::trace!("reading configuration from directory {}", path.display());
     if path.is_dir() {
-      let content = fs::read_to_string(path.join("config.toml"))?;
+      let path = path.join("config.toml");
+      let content = fs::read_to_string(&path)?;
+      log::trace!("parsing from {}", path.display());
       let parsed = toml::from_str(&content)?;
-      Ok(parsed)
+      Ok(Some(parsed))
     } else {
       Ok(None)
     }
