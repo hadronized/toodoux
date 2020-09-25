@@ -1,13 +1,11 @@
 mod cli;
 mod config;
-mod markup;
 mod task;
-mod view;
+
 use crate::{
   cli::{Command, SubCommand},
   config::Config,
-  task::{State, TaskManager},
-  view::View as _,
+  task::{Status, TaskManager},
 };
 use colored::Colorize;
 use std::{

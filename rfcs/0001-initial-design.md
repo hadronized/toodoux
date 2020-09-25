@@ -25,7 +25,8 @@ This document describes the initial MVP of the project. It contains:
     * [Task UID](#task-uid)
     * [Projects](#projects)
     * [Lifecycle](#lifecycle)
-  * [User interface](#user-interface)
+  * [User interface / interaction](#user-interface--interaction)
+    * [Configuration](#configuration)
   * [What’s next](#whats-next)
 * [Impacts](#impacts)
 * [Unresolved questions](#unresolved-questions)
@@ -110,7 +111,25 @@ Projects allow to classify tasks by user-defined namespace.
 
 The four _status_ define TODO
 
-## User interface
+## User interface / interaction
+
+### Configuration
+
+Configuration is done by following the [XDG Base Directory specification] by default but can be overriden by the user
+if required. The configuration root directory is `$XDG_CONFIG_DIR/toodoux` — it should be `~/.config/toodoux` for most
+people on Linux, for instance.
+
+The configuration file, `config.toml`, is a TOML file that contains a single section, called `[main]`, which contains
+the main configuration.
+
+> We reserve the right to use other sections for further, more precise configuration.
+
+It contains the following keys:
+
+- `tasks_file`: path to the file to use to hold tasks.
+- `todo_alias`: name to use when showing the `TODO` status.
+- `wip_alias`: name to use when showing the `WIP` status.
+- `done_alias`: name to use when showing the `DONE` status.
 
 ## What’s next
 
@@ -131,3 +150,4 @@ N/A
 
 [org-mode]: https://orgmode.org
 [taskwarrior]: https://taskwarrior.org
+[XDG Base Directory specification]: https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html

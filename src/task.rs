@@ -1,5 +1,6 @@
 //! Tasks related code.
 
+use crate::config::Config;
 use chrono::{DateTime, Utc};
 use colored::Colorize;
 use serde::{Deserialize, Serialize};
@@ -9,9 +10,6 @@ use std::error::Error;
 use std::fmt;
 use std::fs;
 use std::str::FromStr;
-
-use crate::config::Config;
-use crate::markup::Markup;
 
 /// Create, edit, remove and list tasks.
 #[derive(Debug, Deserialize, Serialize)]
@@ -44,67 +42,14 @@ impl TaskManager {
     self.next_uid = UID(uid);
   }
 
-  /// Create a task.
-  pub fn create_task<N, C, L>(
-    &mut self,
-    name: N,
-    content: C,
-    state: State,
-    labels: L,
-  ) -> (UID, Task)
-  where
-    N: Into<String>,
-    C: Into<String>,
-    L: Into<Vec<String>>,
-  {
+  /// Register a task and give it an [`UID`].
+  pub fn register_task(&mut self, task: Task) -> UID {
     let uid = self.next_uid;
 
     self.increment_uid();
+    self.tasks.insert(uid, task);
 
-    let task = Task {
-      name: name.into(),
-      content: content.into(),
-      state,
-      labels: labels.into(),
-      history: vec![Event::Created(Utc::now())],
-    };
-
-    self.tasks.insert(uid, task.clone());
-    (uid, task)
-  }
-
-  /// Create a task from the editor.
-  ///
-  /// This function will spawn an editor (via `$EDITOR`) to edit a task. When the file is saved and
-  /// the editor exits, this function will go on by reading the file to memory, delete the file and
-  /// extract the information from the file:
-  ///
-  /// - The name of the task, which is the title of the document.
-  /// - The content of the task, which is the body of the document.
-  /// - The labels of the task, which is the list at the right part of the title.
-  /// - The state of task, which is the identifier at the left part of the task.
-  pub fn create_task_from_editor<Mrkp>(
-    &mut self,
-    config: &Config,
-    markup: Mrkp,
-  ) -> Result<(UID, Task), Box<dyn Error>>
-  where
-    Mrkp: Markup,
-  {
-    // spawn an editor if available and if not, simply return an error
-    let editor = std::env::var("EDITOR")?;
-    let mut task_path = config.editor_task_path();
-    task_path.set_extension(Mrkp::EXT[0]);
-    let _ = std::process::Command::new(editor)
-      .arg(&task_path)
-      .spawn()?
-      .wait()?;
-
-    // read the content of the file containing the task and delete it
-    let content = fs::read_to_string(&task_path)?;
-    fs::remove_file(task_path)?;
-
-    Ok(markup.from_str(content, config, self)?)
+    uid
   }
 
   pub fn save(&mut self, config: &Config) -> Result<(), Box<dyn Error>> {
@@ -133,8 +78,6 @@ pub struct Task {
   name: String,
   /// Optional content of the task.
   content: String,
-  /// State of the task.
-  state: State,
   /// Optional list of labels.
   labels: Vec<String>,
   /// Event history.
@@ -142,56 +85,71 @@ pub struct Task {
 }
 
 impl Task {
+  /// Create a new [`Task`] and populate automatically its history with creation date and status.
+  pub fn new(
+    name: impl Into<String>,
+    content: impl Into<String>,
+    labels: impl Into<Vec<String>>,
+  ) -> Self {
+    let date = Utc::now();
+
+    Task {
+      name: name.into(),
+      content: content.into(),
+      labels: labels.into(),
+      history: vec![
+        Event::Created(date),
+        Event::StatusChanged {
+          event_date: date,
+          status: Status::Todo,
+        },
+      ],
+    }
+  }
+
+  /// Get the name of the [`Task`].
   pub fn name(&self) -> &str {
     &self.name
   }
 
+  /// Get the (optional) content of the [`Task`].
   pub fn content(&self) -> &str {
     &self.content
   }
 
-  pub fn state(&self) -> &State {
-    &self.state
+  /// Get the current status of the [`Task`].
+  pub fn status(&self) -> Status {
+    self
+      .history
+      .iter()
+      .filter_map(|event| match event {
+        Event::StatusChanged { status, .. } => Some(status),
+        _ => None,
+      })
+      .copied()
+      .last()
+      .unwrap_or(Status::Todo)
   }
 
+  /// Get the creation date of the [`Task`].
   pub fn creation_date(&self) -> Option<&DateTime<Utc>> {
-    for event in self.history.iter() {
-      match event {
-        Event::Created(ref date) => return Some(date),
-        _ => (),
-      }
-    }
-
-    None
+    self.history.iter().find_map(|event| match event {
+      Event::Created(ref date) => Some(date),
+      _ => None,
+    })
   }
 
-  pub fn change_name<N>(&mut self, name: N)
-  where
-    N: Into<String>,
-  {
+  /// Change the name of the [`Task`].
+  pub fn change_name(&mut self, name: impl Into<String>) {
     self.name = name.into()
   }
 
-  pub fn change_state(&mut self, state: State) {
-    self.state = state.clone();
-    self.history.push(Event::StateChanged(Utc::now(), state));
-  }
-}
-
-impl fmt::Display for Task {
-  fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-    let output = format!(
-      "{state} {name} {labels}",
-      state = self.state,
-      name = self.name.italic(),
-      labels = "" // TODO
-    );
-
-    if let State::Done(_) = self.state {
-      write!(f, "{}", output.strikethrough())
-    } else {
-      f.write_str(&output)
-    }
+  /// Change the status of the [`Task`].
+  pub fn change_status(&mut self, status: Status) {
+    self.history.push(Event::StatusChanged {
+      event_date: Utc::now(),
+      status,
+    });
   }
 }
 
@@ -219,37 +177,25 @@ impl FromStr for UID {
   }
 }
 
-impl fmt::Display for UID {
-  fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-    write!(f, "{}{:0>4}", "#".dimmed(), self.0.to_string().dimmed())
-  }
-}
-
 /// State of a task.
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-pub enum State {
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub enum Status {
   /// A “todo” state.
   ///
   /// Users will typically have “TODO“, “PLANNED”, etc.
-  Todo(String),
+  Todo,
   /// An “ongoing” state.
   ///
   /// Users will typically have “ONGOING”, “WIP”, etc.
-  Ongoing(String),
+  Ongoing,
   /// A “done” state.
   ///
-  /// Users will typically have "DONE", "CANCELLED", "WONTFIX", etc.
-  Done(String),
-}
-
-impl fmt::Display for State {
-  fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-    match *self {
-      State::Todo(ref s) => write!(f, "{:>8}", s.purple().bold()),
-      State::Ongoing(ref s) => write!(f, "{:>8}", s.blue().bold()),
-      State::Done(ref s) => write!(f, "{:>8}", s.dimmed()),
-    }
-  }
+  /// Users will typically have "DONE".
+  Done,
+  /// A “cancelled” state.
+  ///
+  /// Users will typically have "CANCELLED", "WONTFIX", etc.
+  Cancelled,
 }
 
 /// Task event.
@@ -259,15 +205,8 @@ impl fmt::Display for State {
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub enum Event {
   Created(DateTime<Utc>),
-  StateChanged(DateTime<Utc>, State),
-  // AddSchedule {
-  //   event_date: DateTime<Utc>,
-  //   scheduled_date: DateTime<Utc>,
-  // },
-  // RemoveSchedule(DateTime<Utc>),
-  // AddDeadline {
-  //   event_date: DateTime<Utc>,
-  //   scheduled_date: DateTime<Utc>,
-  // },
-  // RemoveDeadline(DateTime<Utc>),
+  StatusChanged {
+    event_date: DateTime<Utc>,
+    status: Status,
+  },
 }

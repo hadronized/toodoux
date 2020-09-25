@@ -13,13 +13,13 @@ pub struct Config {
 #[derive(Debug, Deserialize, Serialize)]
 pub struct MainConfig {
   /// Path to the folder containing all the tasks.
-  root_dir: PathBuf,
+  tasks_file: PathBuf,
   /// Name of the “TODO” state.
-  todo_state_name: String,
+  todo_alias: String,
   /// Name of the “ONGOING” state.
-  ongoing_state_name: String,
+  wip_alias: String,
   /// Name of the “DONE” state.
-  done_state_name: String,
+  done_alias: String,
 }
 
 impl Config {
@@ -45,31 +45,31 @@ impl Config {
   }
 
   pub fn root_dir(&self) -> &Path {
-    &self.main.root_dir
+    &self.main.tasks_file
   }
 
   pub fn config_toml_path(&self) -> PathBuf {
-    self.main.root_dir.join("config.toml")
+    self.main.tasks_file.join("config.toml")
   }
 
   pub fn tasks_path(&self) -> PathBuf {
-    self.main.root_dir.join("tasks.json")
+    self.main.tasks_file.join("tasks.json")
   }
 
   pub fn editor_task_path(&self) -> PathBuf {
-    self.main.root_dir.join(".NEW_TASK")
+    self.main.tasks_file.join(".NEW_TASK")
   }
 
   pub fn todo_state_name(&self) -> &str {
-    &self.main.todo_state_name
+    &self.main.todo_alias
   }
 
   pub fn ongoing_state_name(&self) -> &str {
-    &self.main.ongoing_state_name
+    &self.main.wip_alias
   }
 
   pub fn done_state_name(&self) -> &str {
-    &self.main.done_state_name
+    &self.main.done_alias
   }
 
   pub fn get() -> Result<Option<Self>, Box<dyn Error>> {
@@ -86,10 +86,10 @@ impl Config {
     let done_state_name = "DONE".to_owned();
 
     let main = MainConfig {
-      root_dir,
-      todo_state_name,
-      ongoing_state_name,
-      done_state_name,
+      tasks_file: root_dir,
+      todo_alias: todo_state_name,
+      wip_alias: ongoing_state_name,
+      done_alias: done_state_name,
     };
 
     let config = Config { main };
