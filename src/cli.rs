@@ -1,4 +1,4 @@
-//! CLI options.
+//! Command line interface.
 
 use std::path::PathBuf;
 use structopt::StructOpt;
@@ -11,8 +11,13 @@ use crate::task::UID;
   about = "A modern task / todo / note management tool."
 )]
 pub struct Command {
+  /// UID of a task to operate on.
+  pub task_uid: Option<UID>,
+
   #[structopt(subcommand)]
   pub subcmd: Option<SubCommand>,
+
+  /// Non-default config root to read data and configuration from.
   #[structopt(long, short)]
   pub config: Option<PathBuf>,
 }
@@ -24,7 +29,7 @@ pub enum SubCommand {
   Add {
     /// Mark the item as ONGOING.
     #[structopt(long)]
-    ongoing: bool,
+    start: bool,
 
     /// Mark the item as DONE.
     #[structopt(long)]
@@ -39,24 +44,8 @@ pub enum SubCommand {
   /// Edit a task.
   #[structopt(visible_aliases = &["e", "ed"])]
   Edit {
-    /// UID of the task.
-    uid: UID,
-
     /// Change the name of the task.
-    #[structopt(short, long)]
-    name: Option<Vec<String>>,
-
-    /// Change the state of the task to TODO.
-    #[structopt(short, long)]
-    todo: bool,
-
-    /// Change the state of the task to ONGOING.
-    #[structopt(short, long)]
-    ongoing: bool,
-
-    /// Change the state of the task to DONE.
-    #[structopt(short, long)]
-    done: bool,
+    name: Vec<String>,
   },
   /// Remove a task.
   #[structopt(visible_aliases = &["r", "rm"])]

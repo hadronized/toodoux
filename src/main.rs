@@ -3,27 +3,31 @@ mod config;
 mod markup;
 mod task;
 mod view;
-
+use crate::{
+  cli::{Command, SubCommand},
+  config::Config,
+  task::{State, TaskManager},
+  view::View as _,
+};
 use colored::Colorize;
-use std::error::Error;
-use std::io::{self, Write as _};
-use std::path::Path;
+use std::{
+  error::Error,
+  io::{self, Write as _},
+  path::Path,
+};
 use structopt::StructOpt;
-
-use crate::cli::{Command, SubCommand};
-use crate::config::Config;
-use crate::task::{State, TaskManager};
-use crate::view::View as _;
+use task::UID;
 
 fn print_introduction_text() {
   println!(
     "Hello! It seems like you’re new to {toodoux}!
 
-{toodoux} is a modern take on task / todo lists, mostly based on the amazing emacs’ {org_mode}. Instead of recreating the same plugin inside everybody’s editors over and over, {toodoux} takes it the UNIX way and just does one thing good: {editing_tasks}.
+{toodoux} is a modern take on task / todo lists, mostly based on the amazing emacs’ {org_mode} and {taskwarrior}. Instead of recreating the same plugin inside everybody’s favorite editors over and over, {toodoux} takes it the UNIX way and just does one thing good: {editing_tasks}.
 
-You will first be able to {add_tasks} new tasks, {edit_tasks} existing tasks, {remove_tasks} some and {list_tasks} them all. Then, you will be able to enjoy more advanced features, such as {capturing} and {refiling} tasks, {filtering} them, as well as {scheduling} and {putting_deadlines}. Time metadata are automatically handled for you to follow along.",
+You will first be able to {add_tasks} new tasks, {edit_tasks} existing tasks, {remove_tasks} some and {list_tasks} them all. Then, you will be able to enjoy more advanced features, such as {capturing} and {refiling} tasks, {filtering} them, as well as {putting_deadlines}. Time metadata are automatically handled for you to follow along.",
     toodoux = "toodoux".purple().bold(),
     org_mode = "Org-Mode".purple().bold(),
+    taskwarrior = "taskwarrior".purple().bold(),
     editing_tasks = "editing tasks".bold(),
     add_tasks = "add".green().bold(),
     edit_tasks = "edit".green().bold(),
@@ -32,7 +36,6 @@ You will first be able to {add_tasks} new tasks, {edit_tasks} existing tasks, {r
     capturing = "capturing".green().bold(),
     refiling = "refiling".green().bold(),
     filtering = "filtering".green().bold(),
-    scheduling = "scheduling".green().bold(),
     putting_deadlines = "putting deadlines".green().bold(),
   );
 }
@@ -54,50 +57,59 @@ fn print_no_file_information() {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-  let Command { subcmd, config } = Command::from_args();
+  let Command {
+    subcmd,
+    config,
+    task_uid,
+  } = Command::from_args(); // TODO: use the task_uid
 
   // initialize the logger
-  log::trace!("initializing logger");
+  log::debug!("initializing logger");
   env_logger::init();
 
-  // override the config if explicitly passed a configuration path; otherwise, use the one by
-  // default
-  log::trace!("initializing configuration");
+  // override the config if explicitly passed a configuration path; otherwise, use the one by provided by default
+  log::debug!("initializing configuration");
   match config {
-    Some(path) => initiate_explicit_config(path, subcmd),
-    None => initiate(subcmd),
+    Some(path) => initiate_explicit_config(path, subcmd, task_uid),
+    None => initiate(subcmd, task_uid),
   }
 }
 
+/// Initiate configuration with an explicitly provided path.
 fn initiate_explicit_config(
   config_path: impl AsRef<Path>,
   subcmd: Option<SubCommand>,
+  task_uid: Option<UID>,
 ) -> Result<(), Box<dyn Error>> {
   let path = config_path.as_ref();
   let config = Config::from_dir(path)?;
 
-  initiate_with_config(Some(path), config, subcmd)
+  initiate_with_config(Some(path), config, subcmd, task_uid)
 }
 
-fn initiate(subcmd: Option<SubCommand>) -> Result<(), Box<dyn Error>> {
+/// Initiate configuration by using the default configuration path.
+fn initiate(subcmd: Option<SubCommand>, task_uid: Option<UID>) -> Result<(), Box<dyn Error>> {
   let config = Config::get()?;
-  initiate_with_config(None, config, subcmd)
+  initiate_with_config(None, config, subcmd, task_uid)
 }
 
 fn initiate_with_config(
   path: Option<&Path>,
   config: Option<Config>,
   subcmd: Option<SubCommand>,
+  task_uid: Option<UID>,
 ) -> Result<(), Box<dyn Error>> {
   match config {
+    // explicit configuration
     Some(config) => {
       log::info!(
         "running on configuration at {}",
         config.root_dir().display()
       );
-      run_subcmd(config, subcmd)
+      run_subcmd(config, subcmd, task_uid)
     }
 
+    // no configuration; create it
     None => {
       log::warn!("no configuration detected");
 
@@ -131,7 +143,7 @@ fn initiate_with_config(
         let config = Config::create(path).ok_or_else(|| "cannot create config file")?;
         config.save()?;
 
-        Ok(())
+        run_subcmd(config, subcmd, task_uid)
       } else {
         print_no_file_information();
         Ok(())
@@ -140,125 +152,12 @@ fn initiate_with_config(
   }
 }
 
-fn run_subcmd(config: Config, subcmd: Option<SubCommand>) -> Result<(), Box<dyn Error>> {
+fn run_subcmd(
+  config: Config,
+  subcmd: Option<SubCommand>,
+  task_uid: Option<UID>,
+) -> Result<(), Box<dyn Error>> {
   match subcmd {
-    // default command
-    None => {
-      let task_mgr = TaskManager::new_from_config(&config)?;
-      let mut view = view::cli::CLIView::new(&config);
-
-      view.display_filtered_tasks(task_mgr.tasks(), |_, task| match task.state() {
-        State::Todo(_) | State::Ongoing(_) => true,
-        _ => false,
-      });
-    }
-
-    Some(cmd) => match cmd {
-      SubCommand::Add {
-        content,
-        ongoing,
-        done,
-      } => {
-        let mut task_mgr = TaskManager::new_from_config(&config)?;
-
-        // interactive mode if no content is provided
-        let (uid, task) = if content.is_empty() {
-          let markup = markup::markdown::Markdown::new();
-          task_mgr.create_task_from_editor(&config, markup)?
-        } else {
-          let name = content.join(" ");
-
-          let state = if ongoing {
-            State::Ongoing(config.ongoing_state_name().to_owned())
-          } else if done {
-            State::Done(config.done_state_name().to_owned())
-          } else {
-            State::Todo(config.todo_state_name().to_owned())
-          };
-
-          task_mgr.create_task(name, "", state, Vec::new())
-        };
-
-        task_mgr.save(&config)?;
-      }
-
-      SubCommand::Edit {
-        uid,
-        name,
-        todo,
-        ongoing,
-        done,
-      } => {
-        let mut task_mgr = TaskManager::new_from_config(&config)?;
-        match task_mgr.get_mut(&uid) {
-          Some(task) => {
-            let mut interactive = name.is_none() && !todo && !ongoing && !done;
-
-            if interactive {
-              println!("starting interactive mode");
-            }
-
-            // update the name
-            if let Some(name) = name {
-              task.change_name(name.join(" "));
-            }
-
-            // update the state
-            if todo {
-              task.change_state(State::Todo(config.todo_state_name().to_owned()));
-            }
-
-            if ongoing {
-              task.change_state(State::Ongoing(config.ongoing_state_name().to_owned()));
-            }
-
-            if done {
-              task.change_state(State::Done(config.done_state_name().to_owned()));
-            }
-
-            task_mgr.save(&config);
-          }
-
-          None => {
-            eprintln!("no such task {}", uid);
-          }
-        }
-      }
-
-      SubCommand::Remove { .. } => todo!(),
-
-      SubCommand::List {
-        mut todo,
-        mut ongoing,
-        mut done,
-        all,
-        content,
-      } => {
-        let task_mgr = TaskManager::new_from_config(&config)?;
-        let mut view = view::cli::CLIView::new(&config);
-
-        // filter the tasks; if no flag are passed, then we assume todo and ongoing
-        if !(todo || ongoing || done) {
-          todo = true;
-          ongoing = true;
-        }
-
-        if all {
-          todo = true;
-          ongoing = true;
-          done = true;
-        }
-
-        view.display_filtered_tasks(task_mgr.tasks(), |_, task| match task.state() {
-          State::Todo(_) => todo,
-          State::Ongoing(_) => ongoing,
-          State::Done(_) => done,
-        });
-      }
-
-      _ => (),
-    },
+    _ => Ok(()),
   }
-
-  Ok(())
 }
