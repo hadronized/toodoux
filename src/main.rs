@@ -7,14 +7,14 @@ use crate::{
   config::Config,
   task::{Status, TaskManager},
 };
-use colored::Colorize;
+use colored::Colorize as _;
 use std::{
   error::Error,
   io::{self, Write as _},
   path::Path,
 };
 use structopt::StructOpt;
-use task::UID;
+use task::{Task, UID};
 
 fn print_introduction_text() {
   println!(
@@ -156,6 +156,77 @@ fn run_subcmd(
   task_uid: Option<UID>,
 ) -> Result<(), Box<dyn Error>> {
   match subcmd {
-    _ => Ok(()),
+    // default subcommand
+    None => {}
+    Some(subcmd) => match subcmd {
+      SubCommand::Add { start, done, name } => {
+        if task_uid.is_none() {
+          add_task(config, start, done, name.join(" "))?;
+        } else {
+          println!(
+            "{}",
+            "cannot add a task to another one; maybe you were looking for dependencies instead?"
+              .red()
+          );
+        }
+      }
+
+      SubCommand::Edit { name } => {}
+
+      SubCommand::Remove { all } => {}
+
+      SubCommand::List {
+        todo,
+        ongoing,
+        done,
+        all,
+        content,
+      } => {}
+    },
   }
+
+  Ok(())
+}
+
+/// Add a new task.
+fn add_task(config: Config, start: bool, done: bool, name: String) -> Result<(), Box<dyn Error>> {
+  let mut task_mgr = TaskManager::new_from_config(&config)?;
+  let mut task = Task::new(name, "", Vec::new());
+
+  // determine if we need to switch to another status
+  if start {
+    task.change_status(Status::Ongoing);
+  } else if done {
+    task.change_status(Status::Done);
+  }
+
+  let uid = task_mgr.register_task(task.clone());
+  display_task(&config, uid, &task);
+
+  Ok(())
+}
+
+/// Display a task to the user.
+fn display_task(config: &Config, uid: UID, task: &Task) {
+  let status = match task.status() {
+    Status::Todo => config.todo_alias().clone().bold().magenta(),
+    Status::Ongoing => config.wip_alias().clone().bold().green(),
+    Status::Done => config.done_alias().clone().dimmed().bright_black(),
+    Status::Cancelled => config.cancelled_alias().clone().dimmed().bright_red(),
+  };
+
+  let output = format!(
+    " {uid:^5} {status:^12}  {name}",
+    uid = uid,
+    status = status,
+    name = task.name()
+  );
+
+  println!(
+    " {uid:<5} {status:<12}  {name}",
+    uid = "UID".underline(),
+    status = "Status".underline(),
+    name = "Description".underline()
+  );
+  println!("{:<120}", output.on_black());
 }

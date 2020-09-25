@@ -20,6 +20,8 @@ pub struct MainConfig {
   wip_alias: String,
   /// Name of the “DONE” state.
   done_alias: String,
+  /// Name of the “CANCELLED” state.
+  cancelled_alias: String,
 }
 
 impl Config {
@@ -60,16 +62,20 @@ impl Config {
     self.main.tasks_file.join(".NEW_TASK")
   }
 
-  pub fn todo_state_name(&self) -> &str {
+  pub fn todo_alias(&self) -> &str {
     &self.main.todo_alias
   }
 
-  pub fn ongoing_state_name(&self) -> &str {
+  pub fn wip_alias(&self) -> &str {
     &self.main.wip_alias
   }
 
-  pub fn done_state_name(&self) -> &str {
+  pub fn done_alias(&self) -> &str {
     &self.main.done_alias
+  }
+
+  pub fn cancelled_alias(&self) -> &str {
+    &self.main.cancelled_alias
   }
 
   pub fn get() -> Result<Option<Self>, Box<dyn Error>> {
@@ -78,18 +84,20 @@ impl Config {
   }
 
   pub fn create(path: Option<&Path>) -> Option<Self> {
-    let root_dir = path
+    let tasks_file = path
       .map(|p| p.to_owned())
       .or(Self::get_config_path().ok())?;
-    let todo_state_name = "TODO".to_owned();
-    let ongoing_state_name = "ONGOING".to_owned();
-    let done_state_name = "DONE".to_owned();
+    let todo_alias = "TODO".to_owned();
+    let wip_alias = "WIP".to_owned();
+    let done_alias = "DONE".to_owned();
+    let cancelled_alias = "CANCELLED".to_owned();
 
     let main = MainConfig {
-      tasks_file: root_dir,
-      todo_alias: todo_state_name,
-      wip_alias: ongoing_state_name,
-      done_alias: done_state_name,
+      tasks_file,
+      todo_alias,
+      wip_alias,
+      done_alias,
+      cancelled_alias,
     };
 
     let config = Config { main };

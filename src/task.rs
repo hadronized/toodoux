@@ -177,6 +177,12 @@ impl FromStr for UID {
   }
 }
 
+impl fmt::Display for UID {
+  fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+    self.0.fmt(f)
+  }
+}
+
 /// State of a task.
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub enum Status {
