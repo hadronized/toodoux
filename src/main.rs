@@ -206,7 +206,7 @@ fn add_task(config: Config, start: bool, done: bool, name: String) -> Result<(),
   task_mgr.save(&config)?;
 
   display_task_header();
-  display_task(&config, uid, &task, true);
+  display_task_inline(&config, uid, &task, true);
 
   Ok(())
 }
@@ -227,7 +227,7 @@ fn list_tasks(
 
   let mut parity = true;
   for (&uid, task) in tasks {
-    display_task(&config, uid, task, parity);
+    display_task_inline(&config, uid, task, parity);
     parity = !parity;
   }
 
@@ -246,7 +246,7 @@ fn display_task_header() {
 }
 
 /// Display a task to the user.
-fn display_task(config: &Config, uid: UID, task: &Task, parity: bool) {
+fn display_task_inline(config: &Config, uid: UID, task: &Task, parity: bool) {
   let (name, status);
   match task.status() {
     Status::Todo => {
