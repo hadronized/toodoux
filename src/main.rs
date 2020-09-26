@@ -7,6 +7,7 @@ use crate::{
   config::Config,
   task::{Status, TaskManager},
 };
+use chrono::Utc;
 use colored::Colorize as _;
 use std::{
   error::Error,
@@ -236,8 +237,9 @@ fn list_tasks(
 /// Display the header of tasks.
 fn display_task_header() {
   println!(
-    " {uid:<5} {status:<12}  {name:<120}",
+    " {uid:<5} {age:8} {status:<12}  {name:<120}",
     uid = "UID".underline(),
+    age = "Age".underline(),
     status = "Status".underline(),
     name = "Description".underline()
   );
@@ -278,11 +280,33 @@ fn display_task(config: &Config, uid: UID, task: &Task, parity: bool) {
   }
 
   let output = format!(
-    " {uid:^5} {status:^12}  {name:<120}",
+    " {uid:^5} {age:^8} {status:^12}  {name:<120}",
     uid = uid,
+    age = friendly_age(task),
     status = status,
     name = name,
   );
 
   println!("{:<120}", output);
+}
+
+/// Find out the age of a task and get a friendly representation.
+fn friendly_age(task: &Task) -> String {
+  let dur =
+    Utc::now().signed_duration_since(task.creation_date().cloned().unwrap_or_else(|| Utc::now()));
+
+  if dur.num_minutes() < 1 {
+    format!("{}s", dur.num_seconds())
+  } else if dur.num_hours() < 1 {
+    format!("{}min", dur.num_minutes())
+  } else if dur.num_days() < 1 {
+    format!("{}h", dur.num_hours())
+  } else if dur.num_weeks() < 2 {
+    format!("{}d", dur.num_days())
+  } else if dur.num_weeks() < 4 {
+    // less than four weeks
+    format!("{}w", dur.num_weeks())
+  } else {
+    format!("{}m", dur.num_weeks() / 4)
+  }
 }
