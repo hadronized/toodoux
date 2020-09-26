@@ -177,13 +177,27 @@ fn run_subcmd(
       SubCommand::Remove { all } => {}
 
       SubCommand::List {
-        todo,
-        start,
-        done,
-        cancelled,
+        mut todo,
+        mut start,
+        mut done,
+        mut cancelled,
         all,
-        content,
-      } => list_tasks(config, todo, start, cancelled, done)?,
+        ..
+      } => {
+        // handle filtering logic
+        if all {
+          todo = true;
+          start = true;
+          done = true;
+          cancelled = true;
+        } else if !(todo || start || done || cancelled) {
+          // if nothing is set, we use “sensible” defaults by listing only “active” tasks (todo and ongoing)
+          todo = true;
+          start = true;
+        }
+
+        list_tasks(config, todo, start, cancelled, done)?;
+      }
     },
   }
 
@@ -220,7 +234,18 @@ fn list_tasks(
   done: bool,
 ) -> Result<(), Box<dyn Error>> {
   let task_mgr = TaskManager::new_from_config(&config)?;
-  let mut tasks: Vec<_> = task_mgr.tasks().collect();
+  let mut tasks: Vec<_> = task_mgr
+    .tasks()
+    .filter(|(_, task)| {
+      // filter the task depending on what is passed as argument
+      match task.status() {
+        Status::Ongoing => start,
+        Status::Todo => todo,
+        Status::Done => done,
+        Status::Cancelled => cancelled,
+      }
+    })
+    .collect();
   tasks.sort_by_key(|(_, task)| task.status());
 
   display_task_header();
