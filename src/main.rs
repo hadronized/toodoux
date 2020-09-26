@@ -177,11 +177,12 @@ fn run_subcmd(
 
       SubCommand::List {
         todo,
-        ongoing,
+        start,
         done,
+        cancelled,
         all,
         content,
-      } => {}
+      } => list_tasks(config, todo, start, cancelled, done)?,
     },
   }
 
@@ -203,9 +204,43 @@ fn add_task(config: Config, start: bool, done: bool, name: String) -> Result<(),
   let uid = task_mgr.register_task(task.clone());
   task_mgr.save(&config)?;
 
+  display_task_header();
   display_task(&config, uid, &task, true);
 
   Ok(())
+}
+
+/// List tasks.
+fn list_tasks(
+  config: Config,
+  todo: bool,
+  start: bool,
+  cancelled: bool,
+  done: bool,
+) -> Result<(), Box<dyn Error>> {
+  let task_mgr = TaskManager::new_from_config(&config)?;
+  let mut tasks: Vec<_> = task_mgr.tasks().collect();
+  tasks.sort_by_key(|(_, task)| task.status());
+
+  display_task_header();
+
+  let mut parity = true;
+  for (&uid, task) in tasks {
+    display_task(&config, uid, task, parity);
+    parity = !parity;
+  }
+
+  Ok(())
+}
+
+/// Display the header of tasks.
+fn display_task_header() {
+  println!(
+    " {uid:<5} {status:<12}  {name:<120}",
+    uid = "UID".underline(),
+    status = "Status".underline(),
+    name = "Description".underline()
+  );
 }
 
 /// Display a task to the user.
@@ -247,13 +282,6 @@ fn display_task(config: &Config, uid: UID, task: &Task, parity: bool) {
     uid = uid,
     status = status,
     name = name,
-  );
-
-  println!(
-    " {uid:<5} {status:<12}  {name:<120}",
-    uid = "UID".underline(),
-    status = "Status".underline(),
-    name = "Description".underline()
   );
 
   println!("{:<120}", output);

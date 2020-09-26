@@ -184,16 +184,16 @@ impl fmt::Display for UID {
 }
 
 /// State of a task.
-#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[derive(Clone, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
 pub enum Status {
-  /// A “todo” state.
-  ///
-  /// Users will typically have “TODO“, “PLANNED”, etc.
-  Todo,
   /// An “ongoing” state.
   ///
   /// Users will typically have “ONGOING”, “WIP”, etc.
   Ongoing,
+  /// A “todo” state.
+  ///
+  /// Users will typically have “TODO“, “PLANNED”, etc.
+  Todo,
   /// A “done” state.
   ///
   /// Users will typically have "DONE".

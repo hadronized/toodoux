@@ -57,24 +57,28 @@ pub enum SubCommand {
   /// List all the tasks.
   #[structopt(visible_aliases = &["l", "ls"])]
   List {
-    /// Filter with TODO items.
+    /// Filter with todo items.
     #[structopt(short, long)]
     todo: bool,
 
-    /// Filter with ONGOING items.
+    /// Filter with started items.
     #[structopt(short, long)]
-    ongoing: bool,
+    start: bool,
 
-    /// Filter with DONE items.
+    /// Filter with done items.
     #[structopt(short, long)]
     done: bool,
+
+    /// Filter with cancelled items.
+    #[structopt(short, long)]
+    cancelled: bool,
 
     /// Do not filter the items and show them all.
     #[structopt(short, long)]
     all: bool,
 
     /// Show the content of each listed task, if any.
-    #[structopt(short, long)]
+    #[structopt(long)]
     content: bool,
   },
 }
