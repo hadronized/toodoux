@@ -201,32 +201,60 @@ fn add_task(config: Config, start: bool, done: bool, name: String) -> Result<(),
   }
 
   let uid = task_mgr.register_task(task.clone());
-  display_task(&config, uid, &task);
+  task_mgr.save(&config)?;
+
+  display_task(&config, uid, &task, true);
 
   Ok(())
 }
 
 /// Display a task to the user.
-fn display_task(config: &Config, uid: UID, task: &Task) {
-  let status = match task.status() {
-    Status::Todo => config.todo_alias().clone().bold().magenta(),
-    Status::Ongoing => config.wip_alias().clone().bold().green(),
-    Status::Done => config.done_alias().clone().dimmed().bright_black(),
-    Status::Cancelled => config.cancelled_alias().clone().dimmed().bright_red(),
-  };
+fn display_task(config: &Config, uid: UID, task: &Task, parity: bool) {
+  let (name, status);
+  match task.status() {
+    Status::Todo => {
+      if parity {
+        name = task.name().bright_white().on_black();
+      } else {
+        name = task.name().bright_white().on_bright_black();
+      }
+      status = config.todo_alias().clone().bold().magenta();
+    }
+
+    Status::Ongoing => {
+      name = task.name().black().on_bright_green();
+      status = config.wip_alias().clone().bold().green();
+    }
+
+    Status::Done => {
+      name = task.name().bright_black().dimmed().on_black();
+      status = config.done_alias().clone().dimmed().bright_black();
+    }
+
+    Status::Cancelled => {
+      name = task
+        .name()
+        .bright_black()
+        .dimmed()
+        .strikethrough()
+        .on_black();
+      status = config.cancelled_alias().clone().dimmed().bright_red();
+    }
+  }
 
   let output = format!(
-    " {uid:^5} {status:^12}  {name}",
+    " {uid:^5} {status:^12}  {name:<120}",
     uid = uid,
     status = status,
-    name = task.name()
+    name = name,
   );
 
   println!(
-    " {uid:<5} {status:<12}  {name}",
+    " {uid:<5} {status:<12}  {name:<120}",
     uid = "UID".underline(),
     status = "Status".underline(),
     name = "Description".underline()
   );
-  println!("{:<120}", output.on_black());
+
+  println!("{:<120}", output);
 }
