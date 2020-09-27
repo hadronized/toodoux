@@ -27,15 +27,27 @@ This document describes the initial MVP of the project. It contains:
     * [Lifecycle](#lifecycle)
     * [Tags / labels](#tags--labels)
     * [Priorities](#priorities)
+    * [Filtering](#filtering)
+    * [Notes](#notes)
+    * [History](#history)
+    * [Time-based life cycle](#time-based-life-cycle)
   * [User interface / interaction](#user-interface--interaction)
     * [Main CLI interface](#main-cli-interface)
     * [Tags and priority syntax](#tags-and-priority-syntax)
     * [Adding a task](#adding-a-task)
     * [Listing tasks](#listing-tasks)
-    * [Configuration](#configuration)
+    * [Modifying the name of a task](#modifying-the-name-of-a-task)
+    * [Modifying the priority, project or tags of a task](#modifying-the-priority-project-or-tags-of-a-task)
+    * [Modifying both the name and priority, project or tags of a task](#modifying-both-the-name-and-priority-project-or-tags-of-a-task)
+    * [Adding or editing notes](#adding-or-editing-notes)
+    * [Describing a task](#describing-a-task)
+    * [History of a task](#history-of-a-task)
+  * [Configuration](#configuration)
   * [What’s next](#whats-next)
+    * [Fuzzy search](#fuzzy-search)
 * [Impacts](#impacts)
 * [Unresolved questions](#unresolved-questions)
+  * [What to due when a task goes by due date?](#what-to-due-when-a-task-goes-by-due-date)
 * [Rationale and alternatives](#rationale-and-alternatives)
 
 <!-- vim-markdown-toc -->
@@ -143,13 +155,53 @@ Priorities are a simple way to sort tasks in a way that shows urgent ones first.
 
 A task can have only one priority, but it’s possible to change it whenever wanted.
 
+### Filtering
+
+Filtering allows to prevent _some_ notes from being displayed in listing. Filtering operates on several fields:
+
+- The name of the task.
+- Its priority.
+- Its project.
+- Its tags.
+
+The syntax used to filter is described in the [user interface section](#user-interface--interaction).
+
+### Notes
+
+Tasks can be added notes, which are Markdown entries associated with a timestamp.
+
+### History
+
+Tasks are a collection in time of events. The only immutable property of a task is its UID. The rest is just computed
+from its event history.
+
+Most of the time, users won’t be interested into seeing the history of a task — they will simply want to have a look at
+its current _state_. However, it is possible to get an exhaustive listing of what happened to a task.
+
+### Time-based life cycle
+
+Besides all the metadata and notes, a task can also be added some information related to its life cycle. This
+information are:
+
+- Its _creation date_, which allows to show its _age_. This information allows to know how old a task is and can be
+  used to re-prioritize it.
+- Its _activation duration_. Activation duration is a measure that is done by computing the time user has been spending on
+  it. The way it’s done is actually simple: it is the sum of the time passed while the task is in `WIP` status.
+  Switching its status back to `TODO` or to `DONE` or `CANCELLED` will not make the duration impacted anymore. If a task
+  has some _activation duration_ and is moved back to `TODO`, the activation duration should still be visible in
+  listings, but greyed out.
+- Its _completion duration_. When a task is moved to `DONE` or `CANCELLED` status, its _activation duration_ is
+  automatically transformed into a _completion duration_.
+- Its _due date_, which allows to put a deadline to the task to make it more prioritized than other tasks. If the
+  current time goes by the due date, the task’s priority gets boosted.
+
 ## User interface / interaction
 
 ### Main CLI interface
 
 The initial interface is via the _command line_. Two group of main commands exist:
 
-- `td <verb> <options>`
+- `td [filters] <verb> <options>`
 - `td <task_uid> [filters] <verb> <options>`
 
 This is heavily inspired by [taskwarrior]’s CLI. The first form allows to interact with tasks without specifying a
@@ -216,7 +268,133 @@ It can take several filters as arguments:
 - `--cancelled`: list `CANCELLED` tasks.
 - `--all`: list all tasks.
 
-### Configuration
+Additionally, it is possible to use the [#filtering](#filtering) syntax to filter on:
+
+- Projects with the `@` notation.
+- Priorities with the `+` notation.
+- Tags with the `#` notation.
+- Any free text to search inside the content of tasks.
+
+Filtering is allowed _before_ the text. For instance:
+
+```sh
+td ls @house`
+```
+
+Will show all the tasks for the `house` project.
+
+```sh
+td ls #dog vet
+```
+
+Will show all the tasks related to our dog and vet.
+
+```sh
+td ls +c
+td ls +h #cat
+```
+
+Will show all the critical tasks, and high-priority tasks about our cat.
+
+### Modifying the name of a task
+
+Modifying the name of a task is done easily by using the `edit` or `ed` or `e` verb and simply using some text. You will
+also need the ID of the task (that you can get from the listing right now).
+
+```sh
+td <task_uid> edit <new name>
+td <task_uid> ed <new name>
+td <task_uid> e <new name>
+```
+
+For instance:
+
+```sh
+td 1 e New name for this task
+```
+
+### Modifying the priority, project or tags of a task
+
+As with the name, priorities, projects and tags can be changed with the `edit` / `ed` / `e` verb. Simply use the
+filtering options as if you were creating the task, without putting any text afterwards.
+
+Example:
+
+```sh
+td 1 e @garden
+```
+
+Will move the task which UID is 1 from its current project to the `garden` project.
+
+```sh
+td 34 e +h #late
+```
+
+Will apply (if not already present) the `late` tag and will put the `HIGH` priority on the task which UID is 34.
+
+### Modifying both the name and priority, project or tags of a task
+
+It is possible to modify all the information of a task by simply mixing them together. Projects, priorities and tags
+go first — as in filtering. The name of the task goes afterwards.
+
+Example:
+
+```sh
+td 34 e +h #late Finish my homework
+```
+
+### Adding or editing notes
+
+Tasks, by default, are a collection of metadata (project, tags, priorities and name). There is, however, another
+property that can be set by the user: notes.
+
+Adding notes to a task allow to describe / detail what has been going on since trying to resolve it, for instance. That
+kind of information is logged in the history, and each entry is logged as Markdown.
+
+Notes are added with the `note` verb.
+
+```sh
+td <task_uid> note
+```
+
+It is also possible to edit the already existing notes. This is done with the `--edit` or `-e` switch:
+
+```sh
+td <task_uid> note -edit
+td <task_uid> note -e
+```
+
+All those commands – whether you add or edit — will open our `$EDITOR` or, if not set, will look into the configuration
+to spawn your editor so that you can add / edit notes. There is no format / syntax when adding notes: it’s just plain
+Markdown. Have fun!
+
+However, when editing notes, you will be editing all the notes at once. You are advised not to edit the metadata present
+in the document, or **toodoux** will simply refuse the update.
+
+### Describing a task
+
+So far, we’ve been able to list tasks and operate on a single task. Another feature is to _describe_ a task, with the
+`show` / `s` verb.
+
+```sh
+task <task_uid> show
+```
+
+That command will show the content of a task in a detailed way: all of its metadata along with its notes (if any).
+
+### History of a task
+
+The history of task can be obtained with the `history` / `hist` / `h` verb.
+
+```sh
+task <task_uid> history
+task <task_uid> hist
+task <task_uid> h
+```
+
+This command will provide the exhaustive history of what happened to a task.
+
+## Configuration
 
 Configuration is done by following the [XDG Base Directory specification] by default but can be overriden by the user
 if required. The configuration root directory is `$XDG_CONFIG_DIR/toodoux` — it should be `~/.config/toodoux` for most
@@ -234,8 +412,25 @@ It contains the following keys:
 - `wip_alias`: name to use when showing the `WIP` status.
 - `done_alias`: name to use when showing the `DONE` status.
 - `active_project`: project name to use to filter. Can be set to `null` or removed if no project should be used.
+- `editor`: if `$EDITOR` is not set, this variable will be used to edit notes. If this variable is set while `$EDITOR`
+  is set too, `$EDITOR` has predominance.
 
 ## What’s next
+
+### Fuzzy search
+
+Right now, commands expecting a `<task_uid>` require the user to go through this workflow:
+
+1. Use `td list` or `td ls` (with, maybe, some filtering options).
+2. Search for the task they want and remember its UID.
+3. Issue the command they want by replacing `<task_uid>` with the UID they found previously.
+
+While this is okay-ish, a much better interface would be to allow the user to completely omit the `<task_uid>`. In that
+situation, we would spawn a fuzzy finder that would allow the user to search for their tasks by using the filtering
+syntax, and that would automatically find the right UID associated with the task.
+
+While this feature is exciting, it’s not going to be in the first version and will be added in a later version. An RFC
+will be needed to describe the exact interaction with the user.
 
 # Impacts
 > Does that change have any impact, and if so, which?
@@ -245,7 +440,13 @@ N/A
 # Unresolved questions
 > Any questions that need to be addressed before going on with implementation.
 
-N/A
+## What to due when a task goes by due date?
+
+Possible choices are:
+
+- We consider it as `+h`. `+c` should be set by the user only to have “overriding” priorities on anything else, so it’s
+  not a good candidate. But `+h` is.
+- Display the task in a specific color to show it’s late, but do not change its priority.
 
 # Rationale and alternatives
 > In the end.
