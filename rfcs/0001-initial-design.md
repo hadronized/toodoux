@@ -1,6 +1,5 @@
 - RFC name: **Initial design**
 - RFC type: **addition** | removal | change
-- Author: Dimitri Sabadie <dimitri.sabadie@gmail.com>
 - Date created: Sep 25, 2020
 - Date updated: Sep 25, 2020
 - Status: **draft** | review | accepted | refused
