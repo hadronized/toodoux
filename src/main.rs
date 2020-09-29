@@ -219,8 +219,10 @@ fn add_task(config: Config, start: bool, done: bool, name: String) -> Result<(),
   let uid = task_mgr.register_task(task.clone());
   task_mgr.save(&config)?;
 
-  display_task_header();
-  display_task_inline(&config, uid, &task, true);
+  let task_uid_width = guess_task_uid_width(uid);
+  let status_width = guess_task_status_width(&config, task.status());
+  display_task_header(task_uid_width, status_width);
+  display_task_inline(&config, uid, &task, true, task_uid_width, status_width);
 
   Ok(())
 }
@@ -248,11 +250,23 @@ fn list_tasks(
     .collect();
   tasks.sort_by_key(|(_, task)| task.status());
 
-  display_task_header();
+  // precompute a bunch of data for display widths / padding / etc.
+  let (task_uid_width, status_width) =
+    tasks
+      .iter()
+      .fold((0, 0), |(task_uid_width, status_width), (&uid, task)| {
+        let task_uid_width = task_uid_width.max(guess_task_uid_width(uid));
+        let status_width = status_width.max(guess_task_status_width(&config, task.status()));
+
+        (task_uid_width, status_width)
+      });
+
+  // actual display
+  display_task_header(task_uid_width, status_width);
 
   let mut parity = true;
   for (&uid, task) in tasks {
-    display_task_inline(&config, uid, task, parity);
+    display_task_inline(&config, uid, task, parity, task_uid_width, status_width);
     parity = !parity;
   }
 
@@ -260,18 +274,31 @@ fn list_tasks(
 }
 
 /// Display the header of tasks.
-fn display_task_header() {
-  println!(
-    " {uid:<5} {age:8} {status:<12}  {name:<120}",
+fn display_task_header(task_uid_width: usize, status_width: usize) {
+  let output = format!(
+    " {uid:<width$}",
     uid = "UID".underline(),
+    width = task_uid_width
+  ) + &format!(
+    " {age:5} {status:<width$} {name}",
     age = "Age".underline(),
     status = "Status".underline(),
-    name = "Description".underline()
+    name = "Description".underline(),
+    width = status_width
   );
+
+  println!("{:<120}", output);
 }
 
 /// Display a task to the user.
-fn display_task_inline(config: &Config, uid: UID, task: &Task, parity: bool) {
+fn display_task_inline(
+  config: &Config,
+  uid: UID,
+  task: &Task,
+  parity: bool,
+  task_uid_width: usize,
+  status_width: usize,
+) {
   let (name, status);
   match task.status() {
     Status::Todo => {
@@ -304,13 +331,14 @@ fn display_task_inline(config: &Config, uid: UID, task: &Task, parity: bool) {
     }
   }
 
-  let output = format!(
-    " {uid:^5} {age:^8} {status:^12}  {name:<120}",
-    uid = uid,
-    age = friendly_age(task),
-    status = status,
-    name = name,
-  );
+  let output = format!(" {uid:<width$}", uid = uid, width = task_uid_width)
+    + &format!(
+      " {age:<5} {status:<width$} {name}",
+      age = friendly_age(task),
+      status = status,
+      name = name,
+      width = status_width
+    );
 
   println!("{:<120}", output);
 }
@@ -334,4 +362,36 @@ fn friendly_age(task: &Task) -> String {
   } else {
     format!("{}m", dur.num_weeks() / 4)
   }
+}
+
+/// Guess the width required to represent the task UID.
+fn guess_task_uid_width(uid: UID) -> usize {
+  let val = uid.val();
+
+  // minimum is 3 because of “UID” (three chars)
+  if val < 10 {
+    3
+  } else if val < 100 {
+    3
+  } else if val < 1000 {
+    3
+  } else if val < 10000 {
+    4
+  } else if val < 100000 {
+    5
+  } else {
+    6
+  }
+}
+
+/// Guess the width required to represent the task status.
+fn guess_task_status_width(config: &Config, status: Status) -> usize {
+  let width = match status {
+    Status::Ongoing => config.wip_alias().len(),
+    Status::Todo => config.todo_alias().len(),
+    Status::Done => config.done_alias().len(),
+    Status::Cancelled => config.cancelled_alias().len(),
+  };
+
+  width.max("Status".len())
 }

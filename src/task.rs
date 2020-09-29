@@ -157,6 +157,12 @@ impl Task {
 #[derive(Clone, Copy, Debug, Deserialize, Hash, Eq, PartialEq, Serialize)]
 pub struct UID(u32);
 
+impl UID {
+  pub fn val(self) -> u32 {
+    self.0
+  }
+}
+
 impl From<UID> for u32 {
   fn from(uid: UID) -> Self {
     uid.0
