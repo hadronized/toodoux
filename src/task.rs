@@ -2,7 +2,6 @@
 
 use crate::config::Config;
 use chrono::{DateTime, Utc};
-use colored::Colorize;
 use serde::{Deserialize, Serialize};
 use serde_json as json;
 use std::collections::HashMap;
@@ -61,14 +60,6 @@ impl TaskManager {
 
   pub fn tasks(&self) -> impl Iterator<Item = (&UID, &Task)> {
     self.tasks.iter()
-  }
-
-  pub fn get(&self, uid: &UID) -> Option<&Task> {
-    self.tasks.get(uid)
-  }
-
-  pub fn get_mut(&mut self, uid: &UID) -> Option<&mut Task> {
-    self.tasks.get_mut(uid)
   }
 }
 

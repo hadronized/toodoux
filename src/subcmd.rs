@@ -2,7 +2,12 @@ use std::error::Error;
 
 use colored::Colorize;
 
-use crate::{cli::list_tasks, cli::SubCommand, config::Config, task::TaskManager, task::UID};
+use crate::{
+  cli::SubCommand,
+  cli::{add_task, list_tasks},
+  config::Config,
+  task::UID,
+};
 
 pub fn run_subcmd(
   config: Config,
@@ -25,9 +30,9 @@ pub fn run_subcmd(
         }
       }
 
-      SubCommand::Edit { name } => {}
+      SubCommand::Edit { .. } => {}
 
-      SubCommand::Remove { all } => {}
+      SubCommand::Remove { .. } => {}
 
       SubCommand::List {
         mut todo,
@@ -53,29 +58,6 @@ pub fn run_subcmd(
       }
     },
   }
-
-  Ok(())
-}
-
-/// Add a new task.
-fn add_task(config: Config, start: bool, done: bool, name: String) -> Result<(), Box<dyn Error>> {
-  let mut task_mgr = TaskManager::new_from_config(&config)?;
-  let mut task = Task::new(name, Vec::new());
-
-  // determine if we need to switch to another status
-  if start {
-    task.change_status(Status::Ongoing);
-  } else if done {
-    task.change_status(Status::Done);
-  }
-
-  let uid = task_mgr.register_task(task.clone());
-  task_mgr.save(&config)?;
-
-  let task_uid_width = guess_task_uid_width(uid);
-  let status_width = guess_task_status_width(&config, task.status());
-  display_task_header(task_uid_width, status_width);
-  display_task_inline(&config, uid, &task, true, task_uid_width, status_width);
 
   Ok(())
 }

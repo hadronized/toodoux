@@ -6,9 +6,8 @@ mod task;
 use crate::{
   cli::{Command, SubCommand},
   config::Config,
-  task::{Status, TaskManager},
 };
-use chrono::Utc;
+
 use colored::Colorize as _;
 use std::{
   error::Error,
@@ -17,7 +16,7 @@ use std::{
 };
 use structopt::StructOpt;
 use subcmd::run_subcmd;
-use task::{Task, UID};
+use task::UID;
 
 fn print_introduction_text() {
   println!(

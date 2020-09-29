@@ -58,10 +58,6 @@ impl Config {
     self.main.tasks_file.join("tasks.json")
   }
 
-  pub fn editor_task_path(&self) -> PathBuf {
-    self.main.tasks_file.join(".NEW_TASK")
-  }
-
   pub fn todo_alias(&self) -> &str {
     &self.main.todo_alias
   }

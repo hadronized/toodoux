@@ -131,6 +131,34 @@ pub fn list_tasks(
   Ok(())
 }
 
+/// Add a new task.
+pub fn add_task(
+  config: Config,
+  start: bool,
+  done: bool,
+  name: String,
+) -> Result<(), Box<dyn Error>> {
+  let mut task_mgr = TaskManager::new_from_config(&config)?;
+  let mut task = Task::new(name, Vec::new());
+
+  // determine if we need to switch to another status
+  if start {
+    task.change_status(Status::Ongoing);
+  } else if done {
+    task.change_status(Status::Done);
+  }
+
+  let uid = task_mgr.register_task(task.clone());
+  task_mgr.save(&config)?;
+
+  let task_uid_width = guess_task_uid_width(uid);
+  let status_width = guess_task_status_width(&config, task.status());
+  display_task_header(task_uid_width, status_width);
+  display_task_inline(&config, uid, &task, true, task_uid_width, status_width);
+
+  Ok(())
+}
+
 /// Display the header of tasks.
 fn display_task_header(task_uid_width: usize, status_width: usize) {
   let output = format!(
@@ -223,7 +251,7 @@ fn friendly_age(task: &Task) -> String {
 }
 
 /// Guess the width required to represent the task UID.
-fn guess_task_uid_width(uid: UID) -> usize {
+pub fn guess_task_uid_width(uid: UID) -> usize {
   let val = uid.val();
 
   // minimum is 3 because of “UID” (three chars)
@@ -243,7 +271,7 @@ fn guess_task_uid_width(uid: UID) -> usize {
 }
 
 /// Guess the width required to represent the task status.
-fn guess_task_status_width(config: &Config, status: Status) -> usize {
+pub fn guess_task_status_width(config: &Config, status: Status) -> usize {
   let width = match status {
     Status::Ongoing => config.wip_alias().len(),
     Status::Todo => config.todo_alias().len(),
