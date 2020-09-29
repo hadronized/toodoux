@@ -207,7 +207,7 @@ fn run_subcmd(
 /// Add a new task.
 fn add_task(config: Config, start: bool, done: bool, name: String) -> Result<(), Box<dyn Error>> {
   let mut task_mgr = TaskManager::new_from_config(&config)?;
-  let mut task = Task::new(name, "", Vec::new());
+  let mut task = Task::new(name, Vec::new());
 
   // determine if we need to switch to another status
   if start {

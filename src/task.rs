@@ -76,8 +76,6 @@ impl TaskManager {
 pub struct Task {
   /// Name of the task.
   name: String,
-  /// Optional content of the task.
-  content: String,
   /// Optional list of labels.
   labels: Vec<String>,
   /// Event history.
@@ -86,16 +84,11 @@ pub struct Task {
 
 impl Task {
   /// Create a new [`Task`] and populate automatically its history with creation date and status.
-  pub fn new(
-    name: impl Into<String>,
-    content: impl Into<String>,
-    labels: impl Into<Vec<String>>,
-  ) -> Self {
+  pub fn new(name: impl Into<String>, labels: impl Into<Vec<String>>) -> Self {
     let date = Utc::now();
 
     Task {
       name: name.into(),
-      content: content.into(),
       labels: labels.into(),
       history: vec![
         Event::Created(date),
@@ -110,11 +103,6 @@ impl Task {
   /// Get the name of the [`Task`].
   pub fn name(&self) -> &str {
     &self.name
-  }
-
-  /// Get the (optional) content of the [`Task`].
-  pub fn content(&self) -> &str {
-    &self.content
   }
 
   /// Get the current status of the [`Task`].
@@ -150,6 +138,22 @@ impl Task {
       event_date: Utc::now(),
       status,
     });
+  }
+
+  /// Add a new note to the [`Task`].
+  pub fn add_note(&mut self, note: impl Into<String>) {
+    self.history.push(Event::NoteAdded {
+      event_date: Utc::now(),
+      note: note.into(),
+    });
+  }
+
+  /// Iterate over the notes, if any.
+  pub fn notes(&self) -> impl Iterator<Item = &str> {
+    self.history.iter().filter_map(|event| match event {
+      Event::NoteAdded { ref note, .. } => Some(note.as_str()),
+      _ => None,
+    })
   }
 }
 
@@ -216,9 +220,16 @@ pub enum Status {
 /// changed, etc.).
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub enum Event {
+  /// Event generated when a task is created.
   Created(DateTime<Utc>),
+  /// Event generated when the status of a task changes.
   StatusChanged {
     event_date: DateTime<Utc>,
     status: Status,
+  },
+  /// Event generated when a note is added to a task.
+  NoteAdded {
+    event_date: DateTime<Utc>,
+    note: String,
   },
 }
