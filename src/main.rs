@@ -1,5 +1,6 @@
 mod cli;
 mod config;
+mod metadata;
 mod subcmd;
 mod task;
 
