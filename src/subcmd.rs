@@ -36,8 +36,14 @@ pub fn run_subcmd(
           }
         }
 
-        SubCommand::Edit { .. } => {
-          //if let Some(task) =
+        SubCommand::Edit { name } => {
+          if let Some(task) = task {
+            let name = name.join(" ");
+            task.change_name(name);
+            task_mgr.save(&config)?;
+          } else {
+            println!("{}", "missing or unknown task to edit".red())
+          }
         }
 
         SubCommand::Todo => {
@@ -45,7 +51,7 @@ pub fn run_subcmd(
             task.change_status(Status::Todo);
             task_mgr.save(&config)?;
           } else {
-            println!("{}", "missing or unknown task UID".red());
+            println!("{}", "missing or unknown task".red());
           }
         }
 
@@ -54,7 +60,7 @@ pub fn run_subcmd(
             task.change_status(Status::Ongoing);
             task_mgr.save(&config)?;
           } else {
-            println!("{}", "missing or unknown task UID".red());
+            println!("{}", "missing or unknown task to start".red());
           }
         }
 
@@ -63,7 +69,7 @@ pub fn run_subcmd(
             task.change_status(Status::Done);
             task_mgr.save(&config)?;
           } else {
-            println!("{}", "missing or unknown task UID".red());
+            println!("{}", "missing or unknown task to finish".red());
           }
         }
 
@@ -72,7 +78,7 @@ pub fn run_subcmd(
             task.change_status(Status::Cancelled);
             task_mgr.save(&config)?;
           } else {
-            println!("{}", "missing or unknown task UID".red());
+            println!("{}", "missing or unknown task to cancel".red());
           }
         }
 
