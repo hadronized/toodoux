@@ -43,12 +43,14 @@ pub enum SubCommand {
     /// of what to do.
     name: Vec<String>,
   },
+
   /// Edit a task.
   #[structopt(visible_aliases = &["e", "ed"])]
   Edit {
     /// Change the name of the task.
     name: Vec<String>,
   },
+
   /// Remove a task.
   #[structopt(visible_aliases = &["r", "rm"])]
   Remove {
@@ -56,6 +58,7 @@ pub enum SubCommand {
     #[structopt(short, long)]
     all: bool,
   },
+
   /// List all the tasks.
   #[structopt(visible_aliases = &["l", "ls"])]
   List {
