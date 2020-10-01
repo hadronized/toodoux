@@ -40,7 +40,7 @@ pub fn run_subcmd(
         SubCommand::Todo => {
           if let Some(task) = task_uid.and_then(|uid| task_mgr.get_mut(uid)) {
             task.change_status(Status::Todo);
-            task_mgr.save(&config);
+            task_mgr.save(&config)?;
           } else {
             println!("{}", "missing or unknown task UID".red());
           }
@@ -49,7 +49,7 @@ pub fn run_subcmd(
         SubCommand::Start => {
           if let Some(task) = task_uid.and_then(|uid| task_mgr.get_mut(uid)) {
             task.change_status(Status::Ongoing);
-            task_mgr.save(&config);
+            task_mgr.save(&config)?;
           } else {
             println!("{}", "missing or unknown task UID".red());
           }
@@ -58,7 +58,7 @@ pub fn run_subcmd(
         SubCommand::Done => {
           if let Some(task) = task_uid.and_then(|uid| task_mgr.get_mut(uid)) {
             task.change_status(Status::Done);
-            task_mgr.save(&config);
+            task_mgr.save(&config)?;
           } else {
             println!("{}", "missing or unknown task UID".red());
           }
@@ -67,7 +67,7 @@ pub fn run_subcmd(
         SubCommand::Cancel => {
           if let Some(task) = task_uid.and_then(|uid| task_mgr.get_mut(uid)) {
             task.change_status(Status::Cancelled);
-            task_mgr.save(&config);
+            task_mgr.save(&config)?;
           } else {
             println!("{}", "missing or unknown task UID".red());
           }
