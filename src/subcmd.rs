@@ -21,6 +21,7 @@ pub fn run_subcmd(
     None => {}
     Some(subcmd) => {
       let mut task_mgr = TaskManager::new_from_config(&config)?;
+      let task = task_uid.and_then(|uid| task_mgr.get_mut(uid));
 
       match subcmd {
         SubCommand::Add { start, done, name } => {
@@ -35,10 +36,12 @@ pub fn run_subcmd(
           }
         }
 
-        SubCommand::Edit { .. } => {}
+        SubCommand::Edit { .. } => {
+          //if let Some(task) =
+        }
 
         SubCommand::Todo => {
-          if let Some(task) = task_uid.and_then(|uid| task_mgr.get_mut(uid)) {
+          if let Some(task) = task {
             task.change_status(Status::Todo);
             task_mgr.save(&config)?;
           } else {
