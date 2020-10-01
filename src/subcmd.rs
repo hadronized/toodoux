@@ -3,12 +3,9 @@ use std::error::Error;
 use colored::Colorize;
 
 use crate::{
-  cli::SubCommand,
-  cli::{add_task, list_tasks},
+  cli::{add_task, list_tasks, SubCommand},
   config::Config,
-  task::Status,
-  task::TaskManager,
-  task::UID,
+  task::{Status, TaskManager, UID},
 };
 
 pub fn run_subcmd(
