@@ -61,6 +61,10 @@ impl TaskManager {
   pub fn tasks(&self) -> impl Iterator<Item = (&UID, &Task)> {
     self.tasks.iter()
   }
+
+  pub fn get_mut(&mut self, uid: UID) -> Option<&mut Task> {
+    self.tasks.get_mut(&uid)
+  }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

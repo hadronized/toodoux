@@ -51,6 +51,18 @@ pub enum SubCommand {
     name: Vec<String>,
   },
 
+  /// Mark a task as todo.
+  Todo,
+
+  /// Mark a task as started.
+  Start,
+
+  /// Mark a task as done.
+  Done,
+
+  /// Mark a task as cancelled.
+  Cancel,
+
   /// Remove a task.
   #[structopt(visible_aliases = &["r", "rm"])]
   Remove {
