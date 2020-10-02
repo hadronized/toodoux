@@ -1,7 +1,7 @@
 //! Tasks related code.
 
 use crate::config::Config;
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 use serde_json as json;
 use std::collections::HashMap;
@@ -149,6 +149,35 @@ impl Task {
       Event::NoteAdded { ref note, .. } => Some(note.as_str()),
       _ => None,
     })
+  }
+
+  /// Compute the time spent on this task.
+  pub fn spent_time(&self) -> Duration {
+    let (spent, last_wip) =
+      self
+        .history
+        .iter()
+        .fold((Duration::zero(), None), |(spent, last_wip), event| {
+          match event {
+            Event::StatusChanged { event_date, status } => match (status, last_wip) {
+              // We go from any status to WIP status; return the spent time untouched and set the new “last_wip” with the
+              // time at which the status change occurred
+              (Status::Ongoing, _) => (spent, Some(event_date.clone())),
+              // We go to anything but WIP while the previous status was WIP; accumulate.
+              (_, Some(last_wip)) => (spent + (event_date.signed_duration_since(last_wip)), None),
+              // We go between inactive status, ignore
+              _ => (spent, last_wip),
+            },
+            _ => (spent, last_wip),
+          }
+        });
+
+    if let Some(last_wip) = last_wip {
+      // last status was WIP; accumulate moaaar
+      spent + Utc::now().signed_duration_since(last_wip)
+    } else {
+      spent
+    }
   }
 }
 
