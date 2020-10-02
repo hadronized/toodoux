@@ -196,23 +196,16 @@ pub fn add_task(
 
 /// Display the header of tasks.
 fn display_task_header(task_uid_width: usize, status_width: usize, description_width: usize) {
-  // TODO: UPDATE THAT SCHIESSE
-  let output = format!(
-    " {uid:<width$}",
+  println!(
+    " {uid:<uid_width$} {age:5} {status:<status_width$} {name:<name_width$}",
     uid = "UID".underline(),
-    width = task_uid_width
-  ) + &format!(
-    " {age:5} {status:<width$}",
+    uid_width = task_uid_width,
     age = "Age".underline(),
     status = "Status".underline(),
-    width = status_width
-  ) + &format!(
-    " {name:<width$}",
+    status_width = status_width,
     name = "Description".underline(),
-    width = description_width,
+    name_width = description_width,
   );
-
-  println!("{:<120}", output);
 }
 
 /// Display a task to the user.
@@ -257,16 +250,16 @@ fn display_task_inline(
     }
   }
 
-  let output = format!(" {uid:<width$}", uid = uid, width = task_uid_width)
-    + &format!(
-      " {age:<5} {status:<width$}",
-      age = friendly_age(task),
-      status = status,
-      width = status_width
-    )
-    + &format!(" {name:<width$}", name = name, width = description_width,);
-
-  println!("{:<120}", output);
+  println!(
+    " {uid:<uid_width$} {age:<5} {status:<status_width$} {name:<name_width$}",
+    uid = uid,
+    uid_width = task_uid_width,
+    age = friendly_age(task),
+    status = status,
+    status_width = status_width,
+    name = name,
+    name_width = description_width,
+  );
 }
 
 /// Find out the age of a task and get a friendly representation.
