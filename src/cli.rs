@@ -124,22 +124,31 @@ pub fn list_tasks(
   tasks.sort_by_key(|(_, task)| task.status());
 
   // precompute a bunch of data for display widths / padding / etc.
-  let (task_uid_width, status_width) =
-    tasks
-      .iter()
-      .fold((0, 0), |(task_uid_width, status_width), (&uid, task)| {
-        let task_uid_width = task_uid_width.max(guess_task_uid_width(uid));
-        let status_width = status_width.max(guess_task_status_width(&config, task.status()));
+  let (task_uid_width, status_width, description_width) = tasks.iter().fold(
+    (0, 0, 0),
+    |(task_uid_width, status_width, description_width), (&uid, task)| {
+      let task_uid_width = task_uid_width.max(guess_task_uid_width(uid));
+      let status_width = status_width.max(guess_task_status_width(&config, task.status()));
+      let description_width = description_width.max(task.name().len());
 
-        (task_uid_width, status_width)
-      });
+      (task_uid_width, status_width, description_width)
+    },
+  );
 
   // actual display
-  display_task_header(task_uid_width, status_width);
+  display_task_header(task_uid_width, status_width, description_width);
 
   let mut parity = true;
   for (&uid, task) in tasks {
-    display_task_inline(&config, uid, task, parity, task_uid_width, status_width);
+    display_task_inline(
+      &config,
+      uid,
+      task,
+      parity,
+      task_uid_width,
+      status_width,
+      description_width,
+    );
     parity = !parity;
   }
 
@@ -166,26 +175,41 @@ pub fn add_task(
   let uid = task_mgr.register_task(task.clone());
   task_mgr.save(&config)?;
 
+  // display options
   let task_uid_width = guess_task_uid_width(uid);
   let status_width = guess_task_status_width(&config, task.status());
-  display_task_header(task_uid_width, status_width);
-  display_task_inline(&config, uid, &task, true, task_uid_width, status_width);
+  let description_width = task.name().len();
+
+  display_task_header(task_uid_width, status_width, description_width);
+  display_task_inline(
+    &config,
+    uid,
+    &task,
+    true,
+    task_uid_width,
+    status_width,
+    description_width,
+  );
 
   Ok(())
 }
 
 /// Display the header of tasks.
-fn display_task_header(task_uid_width: usize, status_width: usize) {
+fn display_task_header(task_uid_width: usize, status_width: usize, description_width: usize) {
+  // TODO: UPDATE THAT SCHIESSE
   let output = format!(
     " {uid:<width$}",
     uid = "UID".underline(),
     width = task_uid_width
   ) + &format!(
-    " {age:5} {status:<width$} {name}",
+    " {age:5} {status:<width$}",
     age = "Age".underline(),
     status = "Status".underline(),
-    name = "Description".underline(),
     width = status_width
+  ) + &format!(
+    " {name:<width$}",
+    name = "Description".underline(),
+    width = description_width,
   );
 
   println!("{:<120}", output);
@@ -199,6 +223,7 @@ fn display_task_inline(
   parity: bool,
   task_uid_width: usize,
   status_width: usize,
+  description_width: usize,
 ) {
   let (name, status);
   match task.status() {
@@ -234,12 +259,12 @@ fn display_task_inline(
 
   let output = format!(" {uid:<width$}", uid = uid, width = task_uid_width)
     + &format!(
-      " {age:<5} {status:<width$} {name}",
+      " {age:<5} {status:<width$}",
       age = friendly_age(task),
       status = status,
-      name = name,
       width = status_width
-    );
+    )
+    + &format!(" {name:<width$}", name = name, width = description_width,);
 
   println!("{:<120}", output);
 }
