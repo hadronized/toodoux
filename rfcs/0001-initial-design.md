@@ -46,7 +46,7 @@ This document describes the initial MVP of the project. It contains:
     * [Fuzzy search](#fuzzy-search)
 * [Impacts](#impacts)
 * [Unresolved questions](#unresolved-questions)
-  * [What to due when a task goes by due date?](#what-to-due-when-a-task-goes-by-due-date)
+  * [What to do when a task goes by due date?](#what-to-do-when-a-task-goes-by-due-date)
 * [Rationale and alternatives](#rationale-and-alternatives)
 
 <!-- vim-markdown-toc -->
@@ -439,7 +439,7 @@ N/A
 # Unresolved questions
 > Any questions that need to be addressed before going on with implementation.
 
-## What to due when a task goes by due date?
+## What to do when a task goes by due date?
 
 Possible choices are:
 
