@@ -1,8 +1,8 @@
 //! Command line interface.
 
-use chrono::Utc;
+use chrono::{Duration, Utc};
 use colored::Colorize;
-use std::{error::Error, path::PathBuf};
+use std::{error::Error, fmt::Display, path::PathBuf};
 use structopt::StructOpt;
 
 use crate::{config::Config, task::Status, task::Task, task::TaskManager, task::UID};
@@ -197,10 +197,11 @@ pub fn add_task(
 /// Display the header of tasks.
 fn display_task_header(task_uid_width: usize, status_width: usize, description_width: usize) {
   println!(
-    " {uid:<uid_width$} {age:5} {status:<status_width$} {name:<name_width$}",
+    " {uid:<uid_width$} {age:5} {spent:5} {status:<status_width$} {name:<name_width$}",
     uid = "UID".underline(),
     uid_width = task_uid_width,
     age = "Age".underline(),
+    spent = "Spent".underline(),
     status = "Status".underline(),
     status_width = status_width,
     name = "Description".underline(),
@@ -219,7 +220,9 @@ fn display_task_inline(
   description_width: usize,
 ) {
   let (name, status);
-  match task.status() {
+  let task_status = task.status();
+
+  match task_status {
     Status::Todo => {
       if parity {
         name = task.name().bright_white().on_black();
@@ -250,11 +253,14 @@ fn display_task_inline(
     }
   }
 
+  let spent_time = friendly_spent_time(task.spent_time(), task_status);
+
   println!(
-    " {uid:<uid_width$} {age:<5} {status:<status_width$} {name:<name_width$}",
+    " {uid:<uid_width$} {age:<5} {spent:<5} {status:<status_width$} {name:<name_width$}",
     uid = uid,
     uid_width = task_uid_width,
-    age = friendly_age(task),
+    age = friendly_task_age(task),
+    spent = spent_time,
     status = status,
     status_width = status_width,
     name = name,
@@ -263,10 +269,13 @@ fn display_task_inline(
 }
 
 /// Find out the age of a task and get a friendly representation.
-fn friendly_age(task: &Task) -> String {
+fn friendly_task_age(task: &Task) -> String {
   let dur =
     Utc::now().signed_duration_since(task.creation_date().cloned().unwrap_or_else(|| Utc::now()));
+  friendly_duration(dur)
+}
 
+pub fn friendly_duration(dur: Duration) -> String {
   if dur.num_minutes() < 1 {
     format!("{}s", dur.num_seconds())
   } else if dur.num_hours() < 1 {
@@ -313,4 +322,20 @@ pub fn guess_task_status_width(config: &Config, status: Status) -> usize {
   };
 
   width.max("Status".len())
+}
+
+/// String representation of a spent-time.
+///
+/// If no time has been spent on this task, an empty string is returned.
+fn friendly_spent_time(dur: Duration, status: Status) -> impl Display {
+  if dur == Duration::zero() {
+    return String::new().normal();
+  }
+
+  let output = friendly_duration(dur);
+
+  match status {
+    Status::Ongoing => output.blue(),
+    _ => output.bright_black().dimmed(),
+  }
 }
