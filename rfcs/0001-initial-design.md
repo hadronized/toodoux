@@ -2,55 +2,9 @@
 - RFC type: **addition** | removal | change
 - Date created: Sep 25, 2020
 - Date updated: Sep 25, 2020
-- Status: **draft** | review | accepted | refused
+- Status: **draft** | review | accepted | refused | implemented
 
 # Summary
-> Brief summary of the change.
-
-This document describes the initial MVP of the project. It contains:
-
-- The definition of the scope of the project.
-- The various components required for the first version.
-- An in-depth description of each feature.
-- A list of future features not included in the first versions that will be added later.
-
-<!-- vim-markdown-toc GFM -->
-
-* [Detailed contents](#detailed-contents)
-  * [Scope of the project](#scope-of-the-project)
-  * [Components](#components)
-  * [Feature set](#feature-set)
-    * [Metadata](#metadata)
-    * [Task UID](#task-uid)
-    * [Projects](#projects)
-    * [Lifecycle](#lifecycle)
-    * [Tags / labels](#tags--labels)
-    * [Priorities](#priorities)
-    * [Filtering](#filtering)
-    * [Notes](#notes)
-    * [History](#history)
-    * [Time-based life cycle](#time-based-life-cycle)
-  * [User interface / interaction](#user-interface--interaction)
-    * [Main CLI interface](#main-cli-interface)
-    * [Tags and priority syntax](#tags-and-priority-syntax)
-    * [Adding a task](#adding-a-task)
-    * [Listing tasks](#listing-tasks)
-    * [Modifying the name of a task](#modifying-the-name-of-a-task)
-    * [Modifying the priority, project or tags of a task](#modifying-the-priority-project-or-tags-of-a-task)
-    * [Modifying both the name and priority, project or tags of a task](#modifying-both-the-name-and-priority-project-or-tags-of-a-task)
-    * [Adding or editing notes](#adding-or-editing-notes)
-    * [Describing a task](#describing-a-task)
-    * [History of a task](#history-of-a-task)
-  * [Configuration](#configuration)
-  * [What’s next](#whats-next)
-    * [Fuzzy search](#fuzzy-search)
-* [Impacts](#impacts)
-* [Unresolved questions](#unresolved-questions)
-  * [What to due when a task goes by due date?](#what-to-due-when-a-task-goes-by-due-date)
-* [Rationale and alternatives](#rationale-and-alternatives)
-
-<!-- vim-markdown-toc -->
-
 # Detailed contents
 > Content of the RFC.
 
@@ -431,11 +385,45 @@ syntax, and that would automatically find the right UID associated with the task
 While this feature is exciting, it’s not going to be in the first version and will be added in a later version. An RFC
 will be needed to describe the exact interaction with the user.
 
+<!-- vim-markdown-toc GFM -->
+
 # Impacts
 > Does that change have any impact, and if so, which?
 
 N/A
 
+  * [Components](#components)
+  * [Feature set](#feature-set)
+    * [Metadata](#metadata)
+    * [Task UID](#task-uid)
+    * [Projects](#projects)
+    * [Lifecycle](#lifecycle)
+    * [Tags / labels](#tags--labels)
+    * [Priorities](#priorities)
+    * [Filtering](#filtering)
+    * [Notes](#notes)
+    * [History](#history)
+    * [Time-based life cycle](#time-based-life-cycle)
+  * [User interface / interaction](#user-interface--interaction)
+    * [Main CLI interface](#main-cli-interface)
+    * [Tags and priority syntax](#tags-and-priority-syntax)
+    * [Adding a task](#adding-a-task)
+    * [Listing tasks](#listing-tasks)
+    * [Modifying the name of a task](#modifying-the-name-of-a-task)
+    * [Modifying the priority, project or tags of a task](#modifying-the-priority-project-or-tags-of-a-task)
+    * [Modifying both the name and priority, project or tags of a task](#modifying-both-the-name-and-priority-project-or-tags-of-a-task)
+    * [Adding or editing notes](#adding-or-editing-notes)
+    * [Describing a task](#describing-a-task)
+    * [History of a task](#history-of-a-task)
+  * [Configuration](#configuration)
+  * [What’s next](#whats-next)
+    * [Fuzzy search](#fuzzy-search)
+* [Impacts](#impacts)
+* [Unresolved questions](#unresolved-questions)
+  * [What to due when a task goes by due date?](#what-to-due-when-a-task-goes-by-due-date)
+* [Rationale and alternatives](#rationale-and-alternatives)
+
+<!-- vim-markdown-toc -->
 # Unresolved questions
 > Any questions that need to be addressed before going on with implementation.
 
