@@ -13,6 +13,64 @@ pub enum Metadata {
   Tag(String),
 }
 
+impl From<Priority> for Metadata {
+  fn from(v: Priority) -> Self {
+    Metadata::Priority(v)
+  }
+}
+
+impl Metadata {
+  /// Find metadata in a list of words encoded as a string.
+  ///
+  /// This function will look metadata at the beginning of the string and the end. If you put metadata in the middle of
+  /// the string, they will not be reported as metadata.
+  pub fn from_words(s: &str) -> (Vec<Metadata>, String) {
+    let mut metadata = Vec::new();
+    let mut output = String::new();
+    let mut words = s.split(" ");
+
+    // first pass for metadata
+    Self::parse_metadata_only(&mut metadata, &mut words);
+
+    // second pass is for output only
+    Self::parse_normal_only(&mut metadata, &mut words, &mut output);
+
+    // third pass is for metadata again
+    Self::parse_metadata_only(&mut metadata, &mut words);
+
+    (metadata, output)
+  }
+
+  fn parse_metadata_only<'a>(
+    metadata: &mut Vec<Metadata>,
+    words: &mut impl Iterator<Item = &'a str>,
+  ) {
+    while let Some(word) = words.next() {
+      if let Ok(md) = word.parse() {
+        metadata.push(md);
+      } else {
+        break;
+      }
+    }
+  }
+
+  fn parse_normal_only<'a>(
+    metadata: &mut Vec<Metadata>,
+    words: &mut impl Iterator<Item = &'a str>,
+    output: &mut String,
+  ) {
+    while let Some(word) = words.next() {
+      if let Ok(md) = word.parse() {
+        metadata.push(md);
+        break;
+      } else {
+        output.push(' ');
+        output.push_str(word);
+      }
+    }
+  }
+}
+
 impl FromStr for Metadata {
   type Err = MetadataParsingError;
 
