@@ -20,35 +20,53 @@ impl From<Priority> for Metadata {
 }
 
 impl Metadata {
+  /// Create a metadata representing a project.
+  pub fn project(name: impl Into<String>) -> Self {
+    Metadata::Project(name.into())
+  }
+
+  /// Create a metadata representing a priority.
+  pub fn priority(priority: Priority) -> Self {
+    Metadata::Priority(priority)
+  }
+
+  /// Create a metadata representing a tag.
+  pub fn tag(name: impl Into<String>) -> Self {
+    Metadata::Tag(name.into())
+  }
+
   /// Find metadata in a list of words encoded as a string.
   ///
   /// This function will look metadata at the beginning of the string and the end. If you put metadata in the middle of
   /// the string, they will not be reported as metadata.
-  pub fn from_words(s: &str) -> (Vec<Metadata>, String) {
+  pub fn from_words(s: impl AsRef<str>) -> (Vec<Metadata>, String) {
+    let s = s.as_ref();
     let mut metadata = Vec::new();
-    let mut output = String::new();
-    let mut words = s.split(" ");
+    let mut output = Vec::new();
+    let mut words = s.split(" ").filter(|s| !s.is_empty());
 
     // first pass for metadata
-    Self::parse_metadata_only(&mut metadata, &mut words);
+    Self::parse_metadata_only(&mut metadata, &mut words, &mut output);
 
     // second pass is for output only
     Self::parse_normal_only(&mut metadata, &mut words, &mut output);
 
     // third pass is for metadata again
-    Self::parse_metadata_only(&mut metadata, &mut words);
+    Self::parse_metadata_only(&mut metadata, &mut words, &mut output);
 
-    (metadata, output)
+    (metadata, output.join(" "))
   }
 
   fn parse_metadata_only<'a>(
     metadata: &mut Vec<Metadata>,
     words: &mut impl Iterator<Item = &'a str>,
+    output: &mut Vec<&'a str>,
   ) {
     while let Some(word) = words.next() {
       if let Ok(md) = word.parse() {
         metadata.push(md);
       } else {
+        output.push(word);
         break;
       }
     }
@@ -57,15 +75,14 @@ impl Metadata {
   fn parse_normal_only<'a>(
     metadata: &mut Vec<Metadata>,
     words: &mut impl Iterator<Item = &'a str>,
-    output: &mut String,
+    output: &mut Vec<&'a str>,
   ) {
     while let Some(word) = words.next() {
       if let Ok(md) = word.parse() {
         metadata.push(md);
         break;
       } else {
-        output.push(' ');
-        output.push_str(word);
+        output.push(word);
       }
     }
   }
@@ -189,5 +206,22 @@ mod unit_tests {
       "+la".parse::<Metadata>(),
       Err(MetadataParsingError::UnknownPriority)
     );
+  }
+
+  #[test]
+  fn extract_metadata_output() {
+    let input = "@project1 #tag1 +h Hello, this is world!  #tag2";
+    let (metadata, output) = Metadata::from_words(input);
+
+    assert_eq!(
+      metadata,
+      vec![
+        Metadata::project("project1"),
+        Metadata::tag("tag1"),
+        Metadata::priority(Priority::High),
+        Metadata::tag("tag2")
+      ]
+    );
+    assert_eq!(output, "Hello, this is world!");
   }
 }
