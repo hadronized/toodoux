@@ -5,7 +5,9 @@ use colored::Colorize;
 use std::{error::Error, fmt::Display, path::PathBuf};
 use structopt::StructOpt;
 
-use crate::{config::Config, task::Status, task::Task, task::TaskManager, task::UID};
+use crate::{
+  config::Config, metadata::Metadata, task::Status, task::Task, task::TaskManager, task::UID,
+};
 
 #[derive(Debug, StructOpt)]
 #[structopt(
@@ -160,8 +162,12 @@ pub fn add_task(
   config: Config,
   start: bool,
   done: bool,
-  name: String,
+  content: Vec<String>,
 ) -> Result<(), Box<dyn Error>> {
+  // validate the metadata extracted from the content, if any
+  let (metadata, name) = Metadata::from_words(content.iter().map(|s| s.as_str()));
+  Metadata::validate(&metadata)?;
+
   let mut task_mgr = TaskManager::new_from_config(&config)?;
   let mut task = Task::new(name, Vec::new());
 

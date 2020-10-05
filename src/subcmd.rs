@@ -27,7 +27,7 @@ pub fn run_subcmd(
           content,
         } => {
           if task_uid.is_none() {
-            add_task(config, start, done, content.join(" "))?;
+            add_task(config, start, done, content)?;
           } else {
             println!(
               "{}",
