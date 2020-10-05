@@ -6,7 +6,8 @@ use std::{error::Error, fmt::Display, path::PathBuf};
 use structopt::StructOpt;
 
 use crate::{
-  config::Config, metadata::Metadata, task::Status, task::Task, task::TaskManager, task::UID,
+  config::Config, metadata::Metadata, metadata::Priority, task::Status, task::Task,
+  task::TaskManager, task::UID,
 };
 
 #[derive(Debug, StructOpt)]
@@ -126,19 +127,30 @@ pub fn list_tasks(
   tasks.sort_by_key(|(_, task)| task.status());
 
   // precompute a bunch of data for display widths / padding / etc.
-  let (task_uid_width, status_width, description_width) = tasks.iter().fold(
-    (0, 0, 0),
-    |(task_uid_width, status_width, description_width), (&uid, task)| {
+  let (task_uid_width, status_width, description_width, project_width) = tasks.iter().fold(
+    (0, 0, 0, 0),
+    |(task_uid_width, status_width, description_width, project_width), (&uid, task)| {
       let task_uid_width = task_uid_width.max(guess_task_uid_width(uid));
       let status_width = status_width.max(guess_task_status_width(&config, task.status()));
       let description_width = description_width.max(task.name().len());
+      let project_width = project_width.max(guess_task_project_width(&task));
 
-      (task_uid_width, status_width, description_width)
+      (
+        task_uid_width,
+        status_width,
+        description_width,
+        project_width,
+      )
     },
   );
 
   // actual display
-  display_task_header(task_uid_width, status_width, description_width);
+  display_task_header(
+    task_uid_width,
+    status_width,
+    description_width,
+    project_width,
+  );
 
   let mut parity = true;
   for (&uid, task) in tasks {
@@ -150,6 +162,7 @@ pub fn list_tasks(
       task_uid_width,
       status_width,
       description_width,
+      project_width,
     );
     parity = !parity;
   }
@@ -188,8 +201,14 @@ pub fn add_task(
   let task_uid_width = guess_task_uid_width(uid);
   let status_width = guess_task_status_width(&config, task.status());
   let description_width = task.name().len();
+  let project_width = guess_task_project_width(&task);
 
-  display_task_header(task_uid_width, status_width, description_width);
+  display_task_header(
+    task_uid_width,
+    status_width,
+    description_width,
+    project_width,
+  );
   display_task_inline(
     &config,
     uid,
@@ -198,19 +217,28 @@ pub fn add_task(
     task_uid_width,
     status_width,
     description_width,
+    project_width,
   );
 
   Ok(())
 }
 
 /// Display the header of tasks.
-fn display_task_header(task_uid_width: usize, status_width: usize, description_width: usize) {
+fn display_task_header(
+  task_uid_width: usize,
+  status_width: usize,
+  description_width: usize,
+  project_width: usize,
+) {
   println!(
-    " {uid:<uid_width$} {age:5} {spent:5} {status:<status_width$} {name:<name_width$}",
+    " {uid:<uid_width$} {age:5} {spent:5} {priority:<4} {project:<project_width$} {status:<status_width$} {name:<name_width$}",
     uid = "UID".underline(),
     uid_width = task_uid_width,
     age = "Age".underline(),
     spent = "Spent".underline(),
+    priority = "Prio".underline(),
+    project = "Project".underline(),
+    project_width = project_width,
     status = "Status".underline(),
     status_width = status_width,
     name = "Description".underline(),
@@ -227,6 +255,7 @@ fn display_task_inline(
   task_uid_width: usize,
   status_width: usize,
   description_width: usize,
+  project_width: usize,
 ) {
   let (name, status);
   let task_status = task.status();
@@ -265,11 +294,14 @@ fn display_task_inline(
   let spent_time = friendly_spent_time(task.spent_time(), task_status);
 
   println!(
-    " {uid:<uid_width$} {age:<5} {spent:<5} {status:<status_width$} {name:<name_width$}",
+    " {uid:<uid_width$} {age:<5} {spent:<5} {priority:<4} {project:project_width$} {status:<status_width$} {name:<name_width$}",
     uid = uid,
     uid_width = task_uid_width,
     age = friendly_task_age(task),
     spent = spent_time,
+    priority = friendly_priority(task),
+    project = friendly_project(task),
+    project_width = project_width,
     status = status,
     status_width = status_width,
     name = name,
@@ -298,6 +330,27 @@ pub fn friendly_duration(dur: Duration) -> String {
     format!("{}w", dur.num_weeks())
   } else {
     format!("{}m", dur.num_weeks() / 4)
+  }
+}
+
+fn friendly_priority(task: &Task) -> impl Display {
+  if let Some(prio) = task.priority() {
+    match prio {
+      Priority::Low => "LOW".bright_black().dimmed(),
+      Priority::Medium => "MED".blue(),
+      Priority::High => "HIGH".red(),
+      Priority::Critical => "CRIT".black().on_bright_red(),
+    }
+  } else {
+    "".normal()
+  }
+}
+
+fn friendly_project(task: &Task) -> impl Display {
+  if let Some(project) = task.project() {
+    project.italic()
+  } else {
+    "".normal()
   }
 }
 
@@ -331,6 +384,10 @@ pub fn guess_task_status_width(config: &Config, status: Status) -> usize {
   };
 
   width.max("Status".len())
+}
+
+fn guess_task_project_width(task: &Task) -> usize {
+  task.project().map_or("Project".len(), str::len)
 }
 
 /// String representation of a spent-time.
