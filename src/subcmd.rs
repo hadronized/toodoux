@@ -21,9 +21,13 @@ pub fn run_subcmd(
       let task = task_uid.and_then(|uid| task_mgr.get_mut(uid));
 
       match subcmd {
-        SubCommand::Add { start, done, name } => {
+        SubCommand::Add {
+          start,
+          done,
+          content,
+        } => {
           if task_uid.is_none() {
-            add_task(config, start, done, name.join(" "))?;
+            add_task(config, start, done, content)?;
           } else {
             println!(
               "{}",

@@ -1,6 +1,32 @@
 //! Metadata available to users for filtering / creating tasks.
 
-use std::str::FromStr;
+use serde::{Deserialize, Serialize};
+use std::{
+  error::Error,
+  fmt::{self, Display},
+  str::FromStr,
+};
+
+/// Possible errors that can happen when validating metadata.
+#[derive(Debug)]
+pub enum MetadataValidationError {
+  /// Too many projects; you should use only one or none.
+  TooManyProjects(usize),
+
+  /// Too many priorities; you should use only one or none.
+  TooManyPriorities(usize),
+}
+
+impl Error for MetadataValidationError {}
+
+impl Display for MetadataValidationError {
+  fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+    match *self {
+      MetadataValidationError::TooManyProjects(nb) => write!(f, "too many projects: {}", nb),
+      MetadataValidationError::TooManyPriorities(nb) => write!(f, "too many priorities: {}", nb),
+    }
+  }
+}
 
 /// Task metadata.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -20,6 +46,30 @@ impl From<Priority> for Metadata {
 }
 
 impl Metadata {
+  // TODO: decide what to do with duplicated tags
+  /// Validate a list (set) of metadata.
+  pub fn validate<'a>(
+    metadata: impl IntoIterator<Item = &'a Metadata>,
+  ) -> Result<(), MetadataValidationError> {
+    let (proj_nb, prio_nb) = metadata
+      .into_iter()
+      .fold((0, 0), |(proj_nb, prio_nb), md| match md {
+        Metadata::Project(_) => (proj_nb + 1, proj_nb),
+        Metadata::Priority(_) => (proj_nb, prio_nb + 1),
+        _ => (proj_nb, prio_nb),
+      });
+
+    if proj_nb > 1 {
+      return Err(MetadataValidationError::TooManyProjects(proj_nb));
+    }
+
+    if prio_nb > 1 {
+      return Err(MetadataValidationError::TooManyPriorities(prio_nb));
+    }
+
+    Ok(())
+  }
+
   /// Create a metadata representing a project.
   pub fn project(name: impl Into<String>) -> Self {
     Metadata::Project(name.into())
@@ -36,55 +86,27 @@ impl Metadata {
   }
 
   /// Find metadata in a list of words encoded as a string.
-  ///
-  /// This function will look metadata at the beginning of the string and the end. If you put metadata in the middle of
-  /// the string, they will not be reported as metadata.
-  pub fn from_words(s: impl AsRef<str>) -> (Vec<Metadata>, String) {
-    let s = s.as_ref();
+  pub fn from_words<'a>(strings: impl IntoIterator<Item = &'a str>) -> (Vec<Metadata>, String) {
     let mut metadata = Vec::new();
     let mut output = Vec::new();
-    let mut words = s.split(" ").filter(|s| !s.is_empty());
 
-    // first pass for metadata
-    Self::parse_metadata_only(&mut metadata, &mut words, &mut output);
+    for s in strings {
+      let mut words = s.split(" ").filter(|s| !s.is_empty());
 
-    // second pass is for output only
-    Self::parse_normal_only(&mut metadata, &mut words, &mut output);
+      for word in words {
+        if let Ok(md) = word.parse() {
+          metadata.push(md);
+        } else {
+          output.push(word);
+        }
+      }
+    }
 
-    // third pass is for metadata again
-    Self::parse_metadata_only(&mut metadata, &mut words, &mut output);
+    log::debug!("extracted metadata:");
+    log::debug!("  metadata: {:?}", metadata);
+    log::debug!("  output: {:?}", output);
 
     (metadata, output.join(" "))
-  }
-
-  fn parse_metadata_only<'a>(
-    metadata: &mut Vec<Metadata>,
-    words: &mut impl Iterator<Item = &'a str>,
-    output: &mut Vec<&'a str>,
-  ) {
-    while let Some(word) = words.next() {
-      if let Ok(md) = word.parse() {
-        metadata.push(md);
-      } else {
-        output.push(word);
-        break;
-      }
-    }
-  }
-
-  fn parse_normal_only<'a>(
-    metadata: &mut Vec<Metadata>,
-    words: &mut impl Iterator<Item = &'a str>,
-    output: &mut Vec<&'a str>,
-  ) {
-    while let Some(word) = words.next() {
-      if let Ok(md) = word.parse() {
-        metadata.push(md);
-        break;
-      } else {
-        output.push(word);
-      }
-    }
   }
 }
 
@@ -127,7 +149,7 @@ pub enum MetadataParsingError {
 }
 
 /// Priority.
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
 pub enum Priority {
   Low,
   Medium,
@@ -211,7 +233,7 @@ mod unit_tests {
   #[test]
   fn extract_metadata_output() {
     let input = "@project1 #tag1 +h Hello, this is world!  #tag2";
-    let (metadata, output) = Metadata::from_words(input);
+    let (metadata, output) = Metadata::from_words(vec![input].into_iter());
 
     assert_eq!(
       metadata,
