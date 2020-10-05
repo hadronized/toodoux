@@ -215,6 +215,38 @@ impl Task {
       }
     }
   }
+
+  /// Get the current project.
+  pub fn project(&self) -> Option<&str> {
+    self
+      .history
+      .iter()
+      .filter_map(|event| match event {
+        Event::SetProject { ref project, .. } => Some(project.as_str()),
+        _ => None,
+      })
+      .last()
+  }
+
+  /// Get the current project.
+  pub fn priority(&self) -> Option<Priority> {
+    self
+      .history
+      .iter()
+      .filter_map(|event| match event {
+        Event::SetPriority { priority, .. } => Some(*priority),
+        _ => None,
+      })
+      .last()
+  }
+
+  /// Get the current tags of a task.
+  pub fn tags<'a>(&'a self) -> impl Iterator<Item = &'a str> {
+    self.history.iter().filter_map(|event| match event {
+      Event::AddTag { ref tag, .. } => Some(tag.as_str()),
+      _ => None,
+    })
+  }
 }
 
 /// Unique task identifier.
