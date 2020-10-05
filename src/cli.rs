@@ -41,7 +41,7 @@ pub enum SubCommand {
     ///
     /// If nothing is set, an interactive prompt is spawned for you to enter the content
     /// of what to do.
-    name: Vec<String>,
+    content: Vec<String>,
   },
 
   /// Edit a task.
