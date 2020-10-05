@@ -1,14 +1,10 @@
 //! Tasks related code.
 
-use crate::config::Config;
+use crate::{config::Config, metadata::Metadata, metadata::Priority};
 use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 use serde_json as json;
-use std::collections::HashMap;
-use std::error::Error;
-use std::fmt;
-use std::fs;
-use std::str::FromStr;
+use std::{collections::HashMap, error::Error, fmt, fs, str::FromStr};
 
 /// Create, edit, remove and list tasks.
 #[derive(Debug, Deserialize, Serialize)]
@@ -179,6 +175,46 @@ impl Task {
       spent
     }
   }
+
+  /// Mark this task as part of the input project.
+  ///
+  /// If a project was already present, this method overrides it. Passing an empty string puts that task into the
+  /// _orphaned_ project.
+  pub fn set_project(&mut self, project: impl Into<String>) {
+    self.history.push(Event::SetProject {
+      event_date: Utc::now(),
+      project: project.into(),
+    });
+  }
+
+  /// Set the priority of this task.
+  ///
+  /// If a priority was already set, this method overrides it. Passing [`None`] removes the priority.
+  pub fn set_priority(&mut self, priority: Priority) {
+    self.history.push(Event::SetPriority {
+      event_date: Utc::now(),
+      priority,
+    });
+  }
+
+  /// Add a tag to task.
+  pub fn add_tag(&mut self, tag: impl Into<String>) {
+    self.history.push(Event::AddTag {
+      event_date: Utc::now(),
+      tag: tag.into(),
+    });
+  }
+
+  /// Apply a list of metadata.
+  pub fn apply_metadata(&mut self, metadata: impl IntoIterator<Item = Metadata>) {
+    for md in metadata {
+      match md {
+        Metadata::Project(project) => self.set_project(project),
+        Metadata::Priority(priority) => self.set_priority(priority),
+        Metadata::Tag(tag) => self.add_tag(tag),
+      }
+    }
+  }
 }
 
 /// Unique task identifier.
@@ -246,14 +282,34 @@ pub enum Status {
 pub enum Event {
   /// Event generated when a task is created.
   Created(DateTime<Utc>),
+
   /// Event generated when the status of a task changes.
   StatusChanged {
     event_date: DateTime<Utc>,
     status: Status,
   },
+
   /// Event generated when a note is added to a task.
   NoteAdded {
     event_date: DateTime<Utc>,
     note: String,
+  },
+
+  /// Event generated when a project is set on a task.
+  SetProject {
+    event_date: DateTime<Utc>,
+    project: String,
+  },
+
+  /// Event generated when a priority is set on a task.
+  SetPriority {
+    event_date: DateTime<Utc>,
+    priority: Priority,
+  },
+
+  /// Event generated when a tag is added to a task.
+  AddTag {
+    event_date: DateTime<Utc>,
+    tag: String,
   },
 }

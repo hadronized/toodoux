@@ -1,5 +1,6 @@
 //! Metadata available to users for filtering / creating tasks.
 
+use serde::{Deserialize, Serialize};
 use std::{
   error::Error,
   fmt::{self, Display},
@@ -148,7 +149,7 @@ pub enum MetadataParsingError {
 }
 
 /// Priority.
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
 pub enum Priority {
   Low,
   Medium,

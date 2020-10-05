@@ -171,6 +171,9 @@ pub fn add_task(
   let mut task_mgr = TaskManager::new_from_config(&config)?;
   let mut task = Task::new(name, Vec::new());
 
+  // apply the metadata
+  task.apply_metadata(metadata);
+
   // determine if we need to switch to another status
   if start {
     task.change_status(Status::Ongoing);
