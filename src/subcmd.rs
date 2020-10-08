@@ -15,7 +15,10 @@ pub fn run_subcmd(
 ) -> Result<(), Box<dyn Error>> {
   match subcmd {
     // default subcommand
-    None => {}
+    None => {
+      default_list(&config, true, true, false, false, false)?;
+    }
+
     Some(subcmd) => {
       let mut task_mgr = TaskManager::new_from_config(&config)?;
       let task = task_uid.and_then(|uid| task_mgr.get_mut(uid));
@@ -42,7 +45,7 @@ pub fn run_subcmd(
             edit_task(task, content)?;
             task_mgr.save(&config)?;
           } else {
-            println!("{}", "missing or unknown task to edit".red())
+            println!("{}", "missing or unknown task to edit".red());
           }
         }
 
@@ -85,30 +88,41 @@ pub fn run_subcmd(
         SubCommand::Remove { .. } => {}
 
         SubCommand::List {
-          mut todo,
-          mut start,
-          mut done,
-          mut cancelled,
+          todo,
+          start,
+          done,
+          cancelled,
           all,
           ..
         } => {
-          // handle filtering logic
-          if all {
-            todo = true;
-            start = true;
-            done = true;
-            cancelled = true;
-          } else if !(todo || start || done || cancelled) {
-            // if nothing is set, we use “sensible” defaults by listing only “active” tasks (todo and ongoing)
-            todo = true;
-            start = true;
-          }
-
-          list_tasks(config, todo, start, cancelled, done)?;
+          default_list(&config, todo, start, cancelled, done, all)?;
         }
       }
     }
   }
 
   Ok(())
+}
+
+fn default_list(
+  config: &Config,
+  mut todo: bool,
+  mut start: bool,
+  mut cancelled: bool,
+  mut done: bool,
+  all: bool,
+) -> Result<(), Box<dyn Error>> {
+  // handle filtering logic
+  if all {
+    todo = true;
+    start = true;
+    done = true;
+    cancelled = true;
+  } else if !(todo || start || done || cancelled) {
+    // if nothing is set, we use “sensible” defaults by listing only “active” tasks (todo and ongoing)
+    todo = true;
+    start = true;
+  }
+
+  list_tasks(config, todo, start, cancelled, done)
 }

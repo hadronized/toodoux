@@ -105,13 +105,13 @@ pub enum SubCommand {
 
 /// List tasks.
 pub fn list_tasks(
-  config: Config,
+  config: &Config,
   todo: bool,
   start: bool,
   cancelled: bool,
   done: bool,
 ) -> Result<(), Box<dyn Error>> {
-  let task_mgr = TaskManager::new_from_config(&config)?;
+  let task_mgr = TaskManager::new_from_config(config)?;
   let mut tasks: Vec<_> = task_mgr
     .tasks()
     .filter(|(_, task)| {
@@ -131,7 +131,7 @@ pub fn list_tasks(
     (0, 0, 0, 0),
     |(task_uid_width, status_width, description_width, project_width), (&uid, task)| {
       let task_uid_width = task_uid_width.max(guess_task_uid_width(uid));
-      let status_width = status_width.max(guess_task_status_width(&config, task.status()));
+      let status_width = status_width.max(guess_task_status_width(config, task.status()));
       let description_width = description_width.max(task.name().len());
       let project_width = project_width.max(guess_task_project_width(&task));
 
@@ -155,7 +155,7 @@ pub fn list_tasks(
   let mut parity = true;
   for (&uid, task) in tasks {
     display_task_inline(
-      &config,
+      config,
       uid,
       task,
       parity,
