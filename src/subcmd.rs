@@ -3,7 +3,7 @@ use std::error::Error;
 use colored::Colorize;
 
 use crate::{
-  cli::{add_task, list_tasks, SubCommand},
+  cli::{add_task, edit_task, list_tasks, SubCommand},
   config::Config,
   task::{Status, TaskManager, UID},
 };
@@ -27,7 +27,7 @@ pub fn run_subcmd(
           content,
         } => {
           if task_uid.is_none() {
-            add_task(config, start, done, content)?;
+            add_task(&config, start, done, content)?;
           } else {
             println!(
               "{}",
@@ -37,10 +37,9 @@ pub fn run_subcmd(
           }
         }
 
-        SubCommand::Edit { name } => {
+        SubCommand::Edit { content } => {
           if let Some(task) = task {
-            let name = name.join(" ");
-            task.change_name(name);
+            edit_task(task, content)?;
             task_mgr.save(&config)?;
           } else {
             println!("{}", "missing or unknown task to edit".red())
