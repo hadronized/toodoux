@@ -387,7 +387,7 @@ pub fn guess_task_status_width(config: &Config, status: Status) -> usize {
 }
 
 fn guess_task_project_width(task: &Task) -> usize {
-  task.project().map_or("Project".len(), str::len)
+  task.project().map_or(0, str::len).max("Project".len())
 }
 
 /// String representation of a spent-time.
