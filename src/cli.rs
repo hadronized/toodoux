@@ -376,11 +376,7 @@ pub fn guess_task_uid_width(uid: UID) -> usize {
   let val = uid.val();
 
   // minimum is 3 because of “UID” (three chars)
-  if val < 10 {
-    3
-  } else if val < 100 {
-    3
-  } else if val < 1000 {
+  if val < 1000 {
     3
   } else if val < 10000 {
     4
