@@ -50,8 +50,8 @@ pub enum SubCommand {
   /// Edit a task.
   #[structopt(visible_aliases = &["e", "ed"])]
   Edit {
-    /// Change the name of the task.
-    name: Vec<String>,
+    /// Change the name or metadata of the task.
+    content: Vec<String>,
   },
 
   /// Mark a task as todo.
@@ -172,7 +172,7 @@ pub fn list_tasks(
 
 /// Add a new task.
 pub fn add_task(
-  config: Config,
+  config: &Config,
   start: bool,
   done: bool,
   content: Vec<String>,
@@ -181,7 +181,7 @@ pub fn add_task(
   let (metadata, name) = Metadata::from_words(content.iter().map(|s| s.as_str()));
   Metadata::validate(&metadata)?;
 
-  let mut task_mgr = TaskManager::new_from_config(&config)?;
+  let mut task_mgr = TaskManager::new_from_config(config)?;
   let mut task = Task::new(name, Vec::new());
 
   // apply the metadata
@@ -195,11 +195,11 @@ pub fn add_task(
   }
 
   let uid = task_mgr.register_task(task.clone());
-  task_mgr.save(&config)?;
+  task_mgr.save(config)?;
 
   // display options
   let task_uid_width = guess_task_uid_width(uid);
-  let status_width = guess_task_status_width(&config, task.status());
+  let status_width = guess_task_status_width(config, task.status());
   let description_width = task.name().len();
   let project_width = guess_task_project_width(&task);
 
@@ -210,7 +210,7 @@ pub fn add_task(
     project_width,
   );
   display_task_inline(
-    &config,
+    config,
     uid,
     &task,
     true,
@@ -219,6 +219,23 @@ pub fn add_task(
     description_width,
     project_width,
   );
+
+  Ok(())
+}
+
+/// Edit a task’s name or metadata.
+pub fn edit_task(task: &mut Task, content: Vec<String>) -> Result<(), Box<dyn Error>> {
+  // validate the metadata extracted from the content, if any
+  let (metadata, name) = Metadata::from_words(content.iter().map(|s| s.as_str()));
+  Metadata::validate(&metadata)?;
+
+  // apply the metadata
+  task.apply_metadata(metadata);
+
+  // if we have a new name, apply it too
+  if !name.is_empty() {
+    task.change_name(name);
+  }
 
   Ok(())
 }
