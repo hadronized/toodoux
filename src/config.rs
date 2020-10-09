@@ -14,14 +14,39 @@ pub struct Config {
 pub struct MainConfig {
   /// Path to the folder containing all the tasks.
   tasks_file: PathBuf,
+
   /// Name of the “TODO” state.
   todo_alias: String,
+
   /// Name of the “ONGOING” state.
   wip_alias: String,
+
   /// Name of the “DONE” state.
   done_alias: String,
+
   /// Name of the “CANCELLED” state.
   cancelled_alias: String,
+
+  /// “UID” column name.
+  uid_col_name: String,
+
+  /// “Age” column name.
+  age_col_name: String,
+
+  /// “Spent” column name.
+  spent_col_name: String,
+
+  /// “Prio” column name.
+  prio_col_name: String,
+
+  /// “Project” column name.
+  project_col_name: String,
+
+  /// “Status” column name.
+  status_col_name: String,
+
+  /// “Description” column name.
+  description_col_name: String,
 }
 
 impl Config {
@@ -74,6 +99,34 @@ impl Config {
     &self.main.cancelled_alias
   }
 
+  pub fn uid_col_name(&self) -> &str {
+    &self.main.uid_col_name
+  }
+
+  pub fn age_col_name(&self) -> &str {
+    &self.main.age_col_name
+  }
+
+  pub fn spent_col_name(&self) -> &str {
+    &self.main.spent_col_name
+  }
+
+  pub fn prio_col_name(&self) -> &str {
+    &self.main.prio_col_name
+  }
+
+  pub fn project_col_name(&self) -> &str {
+    &self.main.project_col_name
+  }
+
+  pub fn status_col_name(&self) -> &str {
+    &self.main.status_col_name
+  }
+
+  pub fn description_col_name(&self) -> &str {
+    &self.main.description_col_name
+  }
+
   pub fn get() -> Result<Option<Self>, Box<dyn Error>> {
     let path = Self::get_config_path()?;
     Self::from_dir(path)
@@ -87,6 +140,13 @@ impl Config {
     let wip_alias = "WIP".to_owned();
     let done_alias = "DONE".to_owned();
     let cancelled_alias = "CANCELLED".to_owned();
+    let uid_col_name = "UID".to_owned();
+    let age_col_name = "Age".to_owned();
+    let spent_col_name = "Spent".to_owned();
+    let prio_col_name = "Prio".to_owned();
+    let project_col_name = "Project".to_owned();
+    let status_col_name = "Status".to_owned();
+    let description_col_name = "Description".to_owned();
 
     let main = MainConfig {
       tasks_file,
@@ -94,6 +154,13 @@ impl Config {
       wip_alias,
       done_alias,
       cancelled_alias,
+      uid_col_name,
+      age_col_name,
+      spent_col_name,
+      prio_col_name,
+      project_col_name,
+      status_col_name,
+      description_col_name,
     };
 
     let config = Config { main };

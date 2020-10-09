@@ -2,7 +2,7 @@
 
 use chrono::{Duration, Utc};
 use colored::Colorize;
-use std::{error::Error, fmt::Display, path::PathBuf};
+use std::{error::Error, fmt::Display, iter::once, path::PathBuf};
 use structopt::StructOpt;
 
 use crate::{
@@ -127,43 +127,15 @@ pub fn list_tasks(
   tasks.sort_by_key(|(_, task)| task.status());
 
   // precompute a bunch of data for display widths / padding / etc.
-  let (task_uid_width, status_width, description_width, project_width) = tasks.iter().fold(
-    (0, 0, 0, 0),
-    |(task_uid_width, status_width, description_width, project_width), (&uid, task)| {
-      let task_uid_width = task_uid_width.max(guess_task_uid_width(uid));
-      let status_width = status_width.max(guess_task_status_width(config, task.status()));
-      let description_width = description_width.max(task.name().len());
-      let project_width = project_width.max(guess_task_project_width(&task));
-
-      (
-        task_uid_width,
-        status_width,
-        description_width,
-        project_width,
-      )
-    },
-  );
+  let display_opts = DisplayOptions::new(config, tasks.iter().map(|&(uid, task)| (*uid, task)));
 
   // actual display
-  display_task_header(
-    task_uid_width,
-    status_width,
-    description_width,
-    project_width,
-  );
+  display_task_header(config, &display_opts);
 
   let mut parity = true;
   for (&uid, task) in tasks {
-    display_task_inline(
-      config,
-      uid,
-      task,
-      parity,
-      task_uid_width,
-      status_width,
-      description_width,
-      project_width,
-    );
+    display_task_inline(config, uid, task, parity, &display_opts);
+
     parity = !parity;
   }
 
@@ -198,27 +170,10 @@ pub fn add_task(
   task_mgr.save(config)?;
 
   // display options
-  let task_uid_width = guess_task_uid_width(uid);
-  let status_width = guess_task_status_width(config, task.status());
-  let description_width = task.name().len();
-  let project_width = guess_task_project_width(&task);
+  let display_opts = DisplayOptions::new(config, once((uid, &task)));
 
-  display_task_header(
-    task_uid_width,
-    status_width,
-    description_width,
-    project_width,
-  );
-  display_task_inline(
-    config,
-    uid,
-    &task,
-    true,
-    task_uid_width,
-    status_width,
-    description_width,
-    project_width,
-  );
+  display_task_header(config, &display_opts);
+  display_task_inline(config, uid, &task, true, &display_opts);
 
   Ok(())
 }
@@ -240,26 +195,100 @@ pub fn edit_task(task: &mut Task, content: Vec<String>) -> Result<(), Box<dyn Er
   Ok(())
 }
 
-/// Display the header of tasks.
-fn display_task_header(
+/// Display options to use when rendering in CLI.
+struct DisplayOptions {
+  /// Width of the task UID column.
   task_uid_width: usize,
+  /// Width of the task status column.
   status_width: usize,
+  /// Width of the task description column.
   description_width: usize,
+  /// Width of the task project column.
   project_width: usize,
-) {
+}
+
+impl DisplayOptions {
+  /// Create a new renderer for a set of tasks.
+  fn new<'a>(config: &Config, tasks: impl IntoIterator<Item = (UID, &'a Task)>) -> Self {
+    let (task_uid_width, status_width, description_width, project_width) = tasks.into_iter().fold(
+      (0, 0, 0, 0),
+      |(task_uid_width, status_width, description_width, project_width), (uid, task)| {
+        let task_uid_width = task_uid_width.max(Self::guess_task_uid_width(uid));
+        let status_width = status_width.max(Self::guess_task_status_width(&config, task.status()));
+        let description_width = description_width.max(task.name().len());
+        let project_width = project_width.max(Self::guess_task_project_width(&task).unwrap_or(0));
+
+        (
+          task_uid_width,
+          status_width,
+          description_width,
+          project_width,
+        )
+      },
+    );
+
+    Self {
+      task_uid_width: task_uid_width.max(config.uid_col_name().len()),
+      status_width: status_width.max(config.status_col_name().len()),
+      description_width: description_width.max(config.description_col_name().len()),
+      project_width: project_width.max(config.project_col_name().len()),
+    }
+  }
+
+  /// Guess the width required to represent the task UID.
+  fn guess_task_uid_width(uid: UID) -> usize {
+    let val = uid.val();
+
+    if val < 10 {
+      1
+    } else if val < 100 {
+      2
+    } else if val < 1000 {
+      3
+    } else if val < 10000 {
+      4
+    } else if val < 100000 {
+      5
+    } else {
+      6
+    }
+  }
+
+  /// Guess the width required to represent the task status.
+  fn guess_task_status_width(config: &Config, status: Status) -> usize {
+    let width = match status {
+      Status::Ongoing => config.wip_alias().len(),
+      Status::Todo => config.todo_alias().len(),
+      Status::Done => config.done_alias().len(),
+      Status::Cancelled => config.cancelled_alias().len(),
+    };
+
+    width.max("Status".len())
+  }
+
+  fn guess_task_project_width(task: &Task) -> Option<usize> {
+    task.project().map(str::len)
+  }
+}
+
+/// Display the header of tasks.
+fn display_task_header(config: &Config, opts: &DisplayOptions) {
   println!(
-    " {uid:<uid_width$} {age:5} {spent:5} {priority:<4} {project:<project_width$} {status:<status_width$} {name:<name_width$}",
-    uid = "UID".underline(),
-    uid_width = task_uid_width,
-    age = "Age".underline(),
-    spent = "Spent".underline(),
-    priority = "Prio".underline(),
-    project = "Project".underline(),
-    project_width = project_width,
-    status = "Status".underline(),
-    status_width = status_width,
-    name = "Description".underline(),
-    name_width = description_width,
+    " {uid:<uid_width$} {age:<age_width$} {spent:<spent_width$} {priority:<prio_width$} {project:<project_width$} {status:<status_width$} {description:<description_width$}",
+    uid = config.uid_col_name().underline(),
+    uid_width = opts.task_uid_width,
+    age = config.age_col_name().underline(),
+    age_width = config.age_col_name().len(),
+    spent = config.spent_col_name().underline(),
+    spent_width = config.spent_col_name().len(),
+    priority = config.prio_col_name().underline(),
+    prio_width = config.prio_col_name().len(),
+    project = config.project_col_name().underline(),
+    project_width = opts.project_width,
+    status = config.status_col_name().underline(),
+    status_width = opts.status_width,
+    description = config.description_col_name().underline(),
+    description_width = opts.description_width,
   );
 }
 
@@ -269,10 +298,7 @@ fn display_task_inline(
   uid: UID,
   task: &Task,
   parity: bool,
-  task_uid_width: usize,
-  status_width: usize,
-  description_width: usize,
-  project_width: usize,
+  opts: &DisplayOptions,
 ) {
   let (name, status);
   let task_status = task.status();
@@ -311,18 +337,21 @@ fn display_task_inline(
   let spent_time = friendly_spent_time(task.spent_time(), task_status);
 
   println!(
-    " {uid:<uid_width$} {age:<5} {spent:<5} {priority:<4} {project:project_width$} {status:<status_width$} {name:<name_width$}",
+    " {uid:<uid_width$} {age:<age_width$} {spent:<spent_width$} {priority:<prio_width$} {project:project_width$} {status:<status_width$} {name:<name_width$}",
     uid = uid,
-    uid_width = task_uid_width,
+    uid_width = opts.task_uid_width,
     age = friendly_task_age(task),
+    age_width = config.age_col_name().len(),
     spent = spent_time,
+    spent_width = config.spent_col_name().len(),
     priority = friendly_priority(task),
+    prio_width = config.prio_col_name().len(),
     project = friendly_project(task),
-    project_width = project_width,
+    project_width = opts.project_width,
     status = status,
-    status_width = status_width,
+    status_width = opts.status_width,
     name = name,
-    name_width = description_width,
+    name_width = opts.description_width,
   );
 }
 
@@ -369,38 +398,6 @@ fn friendly_project(task: &Task) -> impl Display {
   } else {
     "".normal()
   }
-}
-
-/// Guess the width required to represent the task UID.
-pub fn guess_task_uid_width(uid: UID) -> usize {
-  let val = uid.val();
-
-  // minimum is 3 because of “UID” (three chars)
-  if val < 1000 {
-    3
-  } else if val < 10000 {
-    4
-  } else if val < 100000 {
-    5
-  } else {
-    6
-  }
-}
-
-/// Guess the width required to represent the task status.
-pub fn guess_task_status_width(config: &Config, status: Status) -> usize {
-  let width = match status {
-    Status::Ongoing => config.wip_alias().len(),
-    Status::Todo => config.todo_alias().len(),
-    Status::Done => config.done_alias().len(),
-    Status::Cancelled => config.cancelled_alias().len(),
-  };
-
-  width.max("Status".len())
-}
-
-fn guess_task_project_width(task: &Task) -> usize {
-  task.project().map_or(0, str::len).max("Project".len())
 }
 
 /// String representation of a spent-time.
