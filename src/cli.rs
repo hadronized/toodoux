@@ -205,24 +205,53 @@ struct DisplayOptions {
   description_width: usize,
   /// Width of the task project column.
   project_width: usize,
+  /// Whether any task has spent time.
+  has_spent_time: bool,
+  /// Whether we have a priority in at least one task.
+  has_priorities: bool,
+  /// Whether we have a project in at least one task.
+  has_projects: bool,
 }
 
 impl DisplayOptions {
   /// Create a new renderer for a set of tasks.
   fn new<'a>(config: &Config, tasks: impl IntoIterator<Item = (UID, &'a Task)>) -> Self {
-    let (task_uid_width, status_width, description_width, project_width) = tasks.into_iter().fold(
-      (0, 0, 0, 0),
-      |(task_uid_width, status_width, description_width, project_width), (uid, task)| {
+    let (
+      task_uid_width,
+      status_width,
+      description_width,
+      project_width,
+      has_spent_time,
+      has_priorities,
+      has_projects,
+    ) = tasks.into_iter().fold(
+      (0, 0, 0, 0, false, false, false),
+      |(
+        task_uid_width,
+        status_width,
+        description_width,
+        project_width,
+        has_spent_time,
+        has_priorities,
+        has_projects,
+      ),
+       (uid, task)| {
         let task_uid_width = task_uid_width.max(Self::guess_task_uid_width(uid));
         let status_width = status_width.max(Self::guess_task_status_width(&config, task.status()));
         let description_width = description_width.max(task.name().len());
         let project_width = project_width.max(Self::guess_task_project_width(&task).unwrap_or(0));
+        let has_spent_tiem = has_spent_time || task.spent_time() != Duration::zero();
+        let has_priorities = has_priorities || task.priority().is_some();
+        let has_projects = has_projects || task.project().is_some();
 
         (
           task_uid_width,
           status_width,
           description_width,
           project_width,
+          has_spent_time,
+          has_priorities,
+          has_projects,
         )
       },
     );
@@ -232,6 +261,9 @@ impl DisplayOptions {
       status_width: status_width.max(config.status_col_name().len()),
       description_width: description_width.max(config.description_col_name().len()),
       project_width: project_width.max(config.project_col_name().len()),
+      has_spent_time,
+      has_priorities,
+      has_projects,
     }
   }
 
@@ -273,18 +305,40 @@ impl DisplayOptions {
 
 /// Display the header of tasks.
 fn display_task_header(config: &Config, opts: &DisplayOptions) {
-  println!(
-    " {uid:<uid_width$} {age:<age_width$} {spent:<spent_width$} {priority:<prio_width$} {project:<project_width$} {status:<status_width$} {description:<description_width$}",
+  print!(
+    " {uid:<uid_width$} {age:<age_width$}",
     uid = config.uid_col_name().underline(),
     uid_width = opts.task_uid_width,
     age = config.age_col_name().underline(),
     age_width = config.age_col_name().len(),
-    spent = config.spent_col_name().underline(),
-    spent_width = config.spent_col_name().len(),
-    priority = config.prio_col_name().underline(),
-    prio_width = config.prio_col_name().len(),
-    project = config.project_col_name().underline(),
-    project_width = opts.project_width,
+  );
+
+  if opts.has_spent_time {
+    print!(
+      " {spent:<spent_width$}",
+      spent = config.spent_col_name().underline(),
+      spent_width = config.spent_col_name().len(),
+    );
+  }
+
+  if opts.has_priorities {
+    print!(
+      " {priority:<prio_width$}",
+      priority = config.prio_col_name().underline(),
+      prio_width = config.prio_col_name().len(),
+    );
+  }
+
+  if opts.has_projects {
+    print!(
+      " {project:<project_width$}",
+      project = config.project_col_name().underline(),
+      project_width = opts.project_width,
+    );
+  }
+
+  println!(
+    " {status:<status_width$} {description:<description_width$}",
     status = config.status_col_name().underline(),
     status_width = opts.status_width,
     description = config.description_col_name().underline(),
@@ -336,18 +390,40 @@ fn display_task_inline(
 
   let spent_time = friendly_spent_time(task.spent_time(), task_status);
 
-  println!(
-    " {uid:<uid_width$} {age:<age_width$} {spent:<spent_width$} {priority:<prio_width$} {project:project_width$} {status:<status_width$} {name:<name_width$}",
+  print!(
+    " {uid:<uid_width$} {age:<age_width$}",
     uid = uid,
     uid_width = opts.task_uid_width,
     age = friendly_task_age(task),
     age_width = config.age_col_name().len(),
-    spent = spent_time,
-    spent_width = config.spent_col_name().len(),
-    priority = friendly_priority(task),
-    prio_width = config.prio_col_name().len(),
-    project = friendly_project(task),
-    project_width = opts.project_width,
+  );
+
+  if opts.has_spent_time {
+    print!(
+      " {spent:<spent_width$}",
+      spent = spent_time,
+      spent_width = config.spent_col_name().len(),
+    );
+  }
+
+  if opts.has_priorities {
+    print!(
+      " {priority:<prio_width$}",
+      priority = friendly_priority(task),
+      prio_width = config.prio_col_name().len(),
+    );
+  }
+
+  if opts.has_projects {
+    print!(
+      " {project:<project_width$}",
+      project = friendly_project(task),
+      project_width = opts.project_width,
+    );
+  }
+
+  println!(
+    " {status:<status_width$} {name:<name_width$}",
     status = status,
     status_width = opts.status_width,
     name = name,
