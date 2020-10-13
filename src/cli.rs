@@ -240,7 +240,7 @@ impl DisplayOptions {
         let status_width = status_width.max(Self::guess_task_status_width(&config, task.status()));
         let description_width = description_width.max(task.name().len());
         let project_width = project_width.max(Self::guess_task_project_width(&task).unwrap_or(0));
-        let has_spent_tiem = has_spent_time || task.spent_time() != Duration::zero();
+        let has_spent_time = has_spent_time || task.spent_time() != Duration::zero();
         let has_priorities = has_priorities || task.priority().is_some();
         let has_projects = has_projects || task.project().is_some();
 
