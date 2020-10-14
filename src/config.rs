@@ -47,6 +47,9 @@ pub struct MainConfig {
 
   /// “Description” column name.
   description_col_name: String,
+
+  /// Should we display empty columns?
+  display_empty_cols: bool,
 }
 
 impl Config {
@@ -127,6 +130,10 @@ impl Config {
     &self.main.description_col_name
   }
 
+  pub fn display_empty_cols(&self) -> bool {
+    self.main.display_empty_cols
+  }
+
   pub fn get() -> Result<Option<Self>, Box<dyn Error>> {
     let path = Self::get_config_path()?;
     Self::from_dir(path)
@@ -147,6 +154,7 @@ impl Config {
     let project_col_name = "Project".to_owned();
     let status_col_name = "Status".to_owned();
     let description_col_name = "Description".to_owned();
+    let display_empty_cols = false;
 
     let main = MainConfig {
       tasks_file,
@@ -161,6 +169,7 @@ impl Config {
       project_col_name,
       status_col_name,
       description_col_name,
+      display_empty_cols,
     };
 
     let config = Config { main };

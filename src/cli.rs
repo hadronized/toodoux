@@ -361,7 +361,9 @@ fn display_task_header(config: &Config, opts: &DisplayOptions) {
     age_width = opts.age_width,
   );
 
-  if opts.has_spent_time {
+  let display_empty_cols = config.display_empty_cols();
+
+  if display_empty_cols || opts.has_spent_time {
     print!(
       " {spent:<spent_width$}",
       spent = config.spent_col_name().underline(),
@@ -369,7 +371,7 @@ fn display_task_header(config: &Config, opts: &DisplayOptions) {
     );
   }
 
-  if opts.has_priorities {
+  if display_empty_cols || opts.has_priorities {
     print!(
       " {priority:<prio_width$}",
       priority = config.prio_col_name().underline(),
@@ -377,7 +379,7 @@ fn display_task_header(config: &Config, opts: &DisplayOptions) {
     );
   }
 
-  if opts.has_projects {
+  if display_empty_cols || opts.has_projects {
     print!(
       " {project:<project_width$}",
       project = config.project_col_name().underline(),
@@ -446,7 +448,9 @@ fn display_task_inline(
     age_width = opts.age_width,
   );
 
-  if opts.has_spent_time {
+  let display_empty_cols = config.display_empty_cols();
+
+  if display_empty_cols || opts.has_spent_time {
     print!(
       " {spent:<spent_width$}",
       spent = spent_time,
@@ -454,7 +458,7 @@ fn display_task_inline(
     );
   }
 
-  if opts.has_priorities {
+  if display_empty_cols || opts.has_priorities {
     print!(
       " {priority:<prio_width$}",
       priority = friendly_priority(task),
@@ -462,7 +466,7 @@ fn display_task_inline(
     );
   }
 
-  if opts.has_projects {
+  if display_empty_cols || opts.has_projects {
     print!(
       " {project:<project_width$}",
       project = friendly_project(task),
