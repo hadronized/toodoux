@@ -21,6 +21,7 @@ This document describes the initial MVP of the project. It contains:
   * [Components](#components)
   * [Feature set](#feature-set)
     * [Metadata](#metadata)
+    * [Ordering](#ordering)
     * [Task UID](#task-uid)
     * [Projects](#projects)
     * [Lifecycle](#lifecycle)
@@ -103,6 +104,16 @@ the project it belongs to, its due date, priority, etc. The complete list:
 - _Event history_: a set of ordered events that have happened to the task. It gathers all the other metadata and pins
   them to a date to provide a proper historical view of what happened to a project. Even changing the content of a
   task is an event.
+
+### Ordering
+
+By default, and for the first version of **toodoux** this is not going to be customizable, the task are presented sorted
+to the user by following this order:
+
+- Priorities: `CRITICAL`, `HIGH`, `MEDIUM`, `LOW`.
+- Age: the older tasks first.
+- Status: `WIP` first, `TODO` then for active; `CANCELLED` first, `DONE` then for inactive.
+- UID.
 
 ### Task UID
 

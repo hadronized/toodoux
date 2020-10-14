@@ -2,7 +2,7 @@
 
 use chrono::{Duration, Utc};
 use colored::Colorize;
-use std::{error::Error, fmt::Display, iter::once, path::PathBuf};
+use std::{cmp::Reverse, error::Error, fmt::Display, iter::once, path::PathBuf};
 use structopt::StructOpt;
 
 use crate::{
@@ -124,7 +124,7 @@ pub fn list_tasks(
       }
     })
     .collect();
-  tasks.sort_by_key(|(_, task)| task.status());
+  tasks.sort_by_key(|&(uid, task)| Reverse((task.priority(), task.age(), task.status(), uid)));
 
   // precompute a bunch of data for display widths / padding / etc.
   let display_opts = DisplayOptions::new(config, tasks.iter().map(|&(uid, task)| (*uid, task)));

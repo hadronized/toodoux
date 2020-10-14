@@ -255,7 +255,7 @@ impl Task {
 }
 
 /// Unique task identifier.
-#[derive(Clone, Copy, Debug, Deserialize, Hash, Eq, PartialEq, Serialize)]
+#[derive(Clone, Copy, Debug, Deserialize, Hash, Eq, Ord, PartialEq, PartialOrd, Serialize)]
 pub struct UID(u32);
 
 impl UID {
