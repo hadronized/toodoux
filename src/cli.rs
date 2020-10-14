@@ -199,6 +199,10 @@ pub fn edit_task(task: &mut Task, content: Vec<String>) -> Result<(), Box<dyn Er
 struct DisplayOptions {
   /// Width of the task UID column.
   task_uid_width: usize,
+  /// Width of the task age column.
+  age_width: usize,
+  /// Width of the task spent column.
+  spent_width: usize,
   /// Width of the task status column.
   status_width: usize,
   /// Width of the task description column.
@@ -216,8 +220,11 @@ struct DisplayOptions {
 impl DisplayOptions {
   /// Create a new renderer for a set of tasks.
   fn new<'a>(config: &Config, tasks: impl IntoIterator<Item = (UID, &'a Task)>) -> Self {
+    // FIXME: switch to a builder pattern here, because it’s starting to becoming a mess
     let (
       task_uid_width,
+      age_width,
+      spent_width,
       status_width,
       description_width,
       project_width,
@@ -225,9 +232,11 @@ impl DisplayOptions {
       has_priorities,
       has_projects,
     ) = tasks.into_iter().fold(
-      (0, 0, 0, 0, false, false, false),
+      (0, 0, 0, 0, 0, 0, false, false, false),
       |(
         task_uid_width,
+        age_width,
+        spent_width,
         status_width,
         description_width,
         project_width,
@@ -237,15 +246,19 @@ impl DisplayOptions {
       ),
        (uid, task)| {
         let task_uid_width = task_uid_width.max(Self::guess_task_uid_width(uid));
+        let age_width = age_width.max(Self::guess_duration_width(&task.age()));
+        let spent_width = spent_width.max(Self::guess_duration_width(&task.spent_time()));
         let status_width = status_width.max(Self::guess_task_status_width(&config, task.status()));
         let description_width = description_width.max(task.name().len());
         let project_width = project_width.max(Self::guess_task_project_width(&task).unwrap_or(0));
-        let has_spent_tiem = has_spent_time || task.spent_time() != Duration::zero();
+        let has_spent_time = has_spent_time || task.spent_time() != Duration::zero();
         let has_priorities = has_priorities || task.priority().is_some();
         let has_projects = has_projects || task.project().is_some();
 
         (
           task_uid_width,
+          age_width,
+          spent_width,
           status_width,
           description_width,
           project_width,
@@ -258,6 +271,8 @@ impl DisplayOptions {
 
     Self {
       task_uid_width: task_uid_width.max(config.uid_col_name().len()),
+      age_width: age_width.max(config.age_col_name().len()),
+      spent_width: spent_width.max(config.spent_col_name().len()),
       status_width: status_width.max(config.status_col_name().len()),
       description_width: description_width.max(config.description_col_name().len()),
       project_width: project_width.max(config.project_col_name().len()),
@@ -267,10 +282,10 @@ impl DisplayOptions {
     }
   }
 
-  /// Guess the width required to represent the task UID.
-  fn guess_task_uid_width(uid: UID) -> usize {
-    let val = uid.val();
-
+  /// Guess the number of characters needed to represent a number.
+  ///
+  /// We limit ourselves to number < 100000.
+  fn guess_number_width(val: usize) -> usize {
     if val < 10 {
       1
     } else if val < 100 {
@@ -283,6 +298,36 @@ impl DisplayOptions {
       5
     } else {
       6
+    }
+  }
+
+  /// Guess the width required to represent the task UID.
+  fn guess_task_uid_width(uid: UID) -> usize {
+    Self::guess_number_width(uid.val() as _)
+  }
+
+  /// Guess the width required to represent a duration.
+  ///
+  /// The width is smart enough to take into account the unit (s, min, h, d, w, m or y) as well as the number.
+  fn guess_duration_width(dur: &Duration) -> usize {
+    if dur.num_minutes() < 1 {
+      // seconds, encoded with "Ns"
+      Self::guess_number_width(dur.num_seconds() as _) + "s".len()
+    } else if dur.num_hours() < 1 {
+      // minutes, encoded with "Nmin"
+      Self::guess_number_width(dur.num_minutes() as _) + "min".len()
+    } else if dur.num_days() < 1 {
+      // hours, encoded with "Nh"
+      Self::guess_number_width(dur.num_hours() as _) + "h".len()
+    } else if dur.num_weeks() < 2 {
+      // days, encoded with "Nd"
+      Self::guess_number_width(dur.num_days() as _) + "d".len()
+    } else if dur.num_weeks() < 4 {
+      // weeks, encoded with "Nw"
+      Self::guess_number_width(dur.num_weeks() as _) + "w".len()
+    } else {
+      // months, encoded with "Nm"
+      Self::guess_number_width(dur.num_weeks() as usize / 4) + "m".len()
     }
   }
 
@@ -310,14 +355,14 @@ fn display_task_header(config: &Config, opts: &DisplayOptions) {
     uid = config.uid_col_name().underline(),
     uid_width = opts.task_uid_width,
     age = config.age_col_name().underline(),
-    age_width = config.age_col_name().len(),
+    age_width = opts.age_width,
   );
 
   if opts.has_spent_time {
     print!(
       " {spent:<spent_width$}",
       spent = config.spent_col_name().underline(),
-      spent_width = config.spent_col_name().len(),
+      spent_width = opts.spent_width,
     );
   }
 
@@ -395,14 +440,14 @@ fn display_task_inline(
     uid = uid,
     uid_width = opts.task_uid_width,
     age = friendly_task_age(task),
-    age_width = config.age_col_name().len(),
+    age_width = opts.age_width,
   );
 
   if opts.has_spent_time {
     print!(
       " {spent:<spent_width$}",
       spent = spent_time,
-      spent_width = config.spent_col_name().len(),
+      spent_width = opts.spent_width,
     );
   }
 
@@ -489,5 +534,45 @@ fn friendly_spent_time(dur: Duration, status: Status) -> impl Display {
   match status {
     Status::Ongoing => output.blue(),
     _ => output.bright_black().dimmed(),
+  }
+}
+
+#[cfg(test)]
+mod unit_tests {
+  use super::*;
+
+  #[test]
+  fn guess_number_width() {
+    for i in 0..10 {
+      assert_eq!(DisplayOptions::guess_number_width(i), 1);
+    }
+
+    for i in 10..100 {
+      assert_eq!(DisplayOptions::guess_number_width(i), 2);
+    }
+
+    for i in 100..1000 {
+      assert_eq!(DisplayOptions::guess_number_width(i), 3);
+    }
+  }
+
+  #[test]
+  fn guess_duration_width() {
+    assert_eq!(
+      DisplayOptions::guess_duration_width(&Duration::seconds(5)),
+      2
+    ); // 5s
+    assert_eq!(
+      DisplayOptions::guess_duration_width(&Duration::seconds(10)),
+      3
+    ); // 10s
+    assert_eq!(
+      DisplayOptions::guess_duration_width(&Duration::seconds(60)),
+      4
+    ); // 1min
+    assert_eq!(
+      DisplayOptions::guess_duration_width(&Duration::minutes(59)),
+      5
+    ); // 59min
   }
 }

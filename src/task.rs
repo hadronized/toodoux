@@ -118,6 +118,11 @@ impl Task {
     })
   }
 
+  /// Get the age of the [`Task`]; i.e. the duration since its creation date.
+  pub fn age(&self) -> Duration {
+    Utc::now().signed_duration_since(self.creation_date().copied().unwrap_or_else(|| Utc::now()))
+  }
+
   /// Change the name of the [`Task`].
   pub fn change_name(&mut self, name: impl Into<String>) {
     self.name = name.into()
