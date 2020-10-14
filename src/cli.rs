@@ -130,7 +130,10 @@ pub fn list_tasks(
   let display_opts = DisplayOptions::new(config, tasks.iter().map(|&(uid, task)| (*uid, task)));
 
   // actual display
-  display_task_header(config, &display_opts);
+  // only display header if there are tasks to display
+  if tasks.len() > 0 {
+    display_task_header(config, &display_opts);
+  }
 
   let mut parity = true;
   for (&uid, task) in tasks {
