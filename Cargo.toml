@@ -18,7 +18,7 @@ path = "src/main.rs"
 [dependencies]
 chrono = { version = "0.4.11", features = ["serde"] }
 colored = "2"
-dirs = "2.0"
+dirs = "3.0"
 env_logger = "0.7.1"
 log = "0.4.11"
 serde = { version = "1", features = ["derive"] }
