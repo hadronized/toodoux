@@ -3,10 +3,12 @@ mod config;
 mod metadata;
 mod subcmd;
 mod task;
+mod term;
 
 use crate::{
   cli::{Command, SubCommand},
   config::Config,
+  term::DefaultTerm,
 };
 
 use colored::Colorize as _;
@@ -100,6 +102,8 @@ fn initiate_with_config(
   subcmd: Option<SubCommand>,
   task_uid: Option<UID>,
 ) -> Result<(), Box<dyn Error>> {
+  let term = DefaultTerm;
+
   match config {
     // explicit configuration
     Some(config) => {
@@ -107,7 +111,7 @@ fn initiate_with_config(
         "running on configuration at {}",
         config.root_dir().display()
       );
-      run_subcmd(config, subcmd, task_uid)
+      run_subcmd(config, term, subcmd, task_uid)
     }
 
     // no configuration; create it
@@ -144,7 +148,7 @@ fn initiate_with_config(
         let config = Config::create(path).ok_or_else(|| "cannot create config file")?;
         config.save()?;
 
-        run_subcmd(config, subcmd, task_uid)
+        run_subcmd(config, term, subcmd, task_uid)
       } else {
         print_no_file_information();
         Ok(())

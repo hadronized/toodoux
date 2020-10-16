@@ -59,9 +59,52 @@ pub struct MainConfig {
 
   /// Should we display empty columns?
   display_empty_cols: bool,
+
+  /// Maximum number of warping lines of task description before breaking it (and adding the ellipsis character).
+  max_description_lines: usize,
+}
+
+impl MainConfig {
+  pub fn new(
+    tasks_file: impl Into<PathBuf>,
+    todo_alias: impl Into<String>,
+    wip_alias: impl Into<String>,
+    done_alias: impl Into<String>,
+    cancelled_alias: impl Into<String>,
+    uid_col_name: impl Into<String>,
+    age_col_name: impl Into<String>,
+    spent_col_name: impl Into<String>,
+    prio_col_name: impl Into<String>,
+    project_col_name: impl Into<String>,
+    status_col_name: impl Into<String>,
+    description_col_name: impl Into<String>,
+    display_empty_cols: bool,
+    max_description_lines: usize,
+  ) -> Self {
+    Self {
+      tasks_file: tasks_file.into(),
+      todo_alias: todo_alias.into(),
+      wip_alias: wip_alias.into(),
+      done_alias: done_alias.into(),
+      cancelled_alias: cancelled_alias.into(),
+      uid_col_name: uid_col_name.into(),
+      age_col_name: age_col_name.into(),
+      spent_col_name: spent_col_name.into(),
+      prio_col_name: prio_col_name.into(),
+      project_col_name: project_col_name.into(),
+      status_col_name: status_col_name.into(),
+      description_col_name: description_col_name.into(),
+      display_empty_cols,
+      max_description_lines,
+    }
+  }
 }
 
 impl Config {
+  pub fn new(main: MainConfig, colors: ColorConfig) -> Self {
+    Config { main, colors }
+  }
+
   fn get_config_path() -> Result<PathBuf, Box<dyn Error>> {
     log::trace!("getting configuration root path from the environment");
     let home = dirs::config_dir().ok_or("cannot find configuration directory")?;
@@ -143,6 +186,10 @@ impl Config {
     self.main.display_empty_cols
   }
 
+  pub fn max_description_lines(&self) -> usize {
+    self.main.max_description_lines
+  }
+
   pub fn get() -> Result<Option<Self>, Box<dyn Error>> {
     let path = Self::get_config_path()?;
     Self::from_dir(path)
@@ -164,6 +211,7 @@ impl Config {
     let status_col_name = "Status".to_owned();
     let description_col_name = "Description".to_owned();
     let display_empty_cols = false;
+    let max_description_lines = 2;
 
     let main = MainConfig {
       tasks_file,
@@ -179,6 +227,7 @@ impl Config {
       status_col_name,
       description_col_name,
       display_empty_cols,
+      max_description_lines,
     };
 
     let config = Config {
@@ -389,9 +438,13 @@ impl Highlight {
 pub struct HighlightedString(ColoredString);
 
 impl HighlightedString {
+  fn new(colored: ColoredString) -> Self {
+    HighlightedString(colored)
+  }
+
   /// Wrap a regular string that is not highlighted.
   pub fn regular(s: impl AsRef<str>) -> Self {
-    HighlightedString(s.as_ref().into())
+    Self::new(s.as_ref().into())
   }
 }
 
