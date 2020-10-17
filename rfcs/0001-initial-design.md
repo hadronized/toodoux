@@ -425,6 +425,59 @@ It contains the following keys:
 - `editor`: if `$EDITOR` is not set, this variable will be used to edit notes. If this variable is set while `$EDITOR`
   is set too, `$EDITOR` has predominance.
 
+## Color Config
+
+It also contains a section for configuring colors, `colors`
+
+This section contains `ColorOptions` for several strings.
+currently, that includes
+- `description` for the format of task descriptions. for example
+```toml
+[colors.description.todo]
+foreground = 'bright white'
+background = 'black'
+```
+- `status` for the colors of task statuses. for example
+```toml
+[colors.status.todo]
+foreground = 'magenta'
+styles = ['bold']
+```
+
+The above color options can be applied to
+- `ongoing`
+- `todo`
+- `done`
+- `cancelled` 
+---
+- `priority` for the colors of priorities. for example
+```toml
+[colors.priority.medium]
+foreground = '00F'
+background = 'pink'
+```
+
+a `ColorOption` is formatted as such:
+```toml
+foreground = 'f00'
+background = 'fuchsia'
+styles = [
+  'bold',
+  'dimmed'
+  'underline',
+  'reversed',
+  'italic',
+  'blink',
+  'hidden',
+  'strikethrough',
+]
+```
+`foreground` and `background` can be color names or hex color codes.
+hex colors work both with and without the `#` symbol.
+css-like shorthands such as `#f00` also work.
+
+The above example includes all possible styles.
+
 ## What’s next
 
 ### Fuzzy search
