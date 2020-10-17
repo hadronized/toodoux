@@ -432,17 +432,17 @@ It also contains a section for configuring colors, `colors`
 This section contains `ColorOptions` for several strings.
 currently, that includes
 - `description` for the format of task descriptions. for example
-```toml
-[colors.description.todo]
-foreground = 'bright white'
-background = 'black'
-```
+  ```toml
+  [colors.description.todo]
+  foreground = 'bright white'
+  background = 'black'
+  ```
 - `status` for the colors of task statuses. for example
-```toml
-[colors.status.todo]
-foreground = 'magenta'
-styles = ['bold']
-```
+  ```toml
+  [colors.status.todo]
+  foreground = 'magenta'
+  styles = ['bold']
+  ```
 
 The above color options can be applied to
 - `ongoing`
@@ -451,11 +451,11 @@ The above color options can be applied to
 - `cancelled` 
 ---
 - `priority` for the colors of priorities. for example
-```toml
-[colors.priority.medium]
-foreground = '00F'
-background = 'pink'
-```
+  ```toml
+  [colors.priority.medium]
+  foreground = '00F'
+  background = 'pink'
+  ```
 
 a `ColorOption` is formatted as such:
 ```toml
