@@ -380,6 +380,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "serde_test"
+version = "1.0.117"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d9a49e2f787c0fddfd5e758cbbd3cbf81c3a8d12ef091283c52d9e9b4d417d3c"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "strsim"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -478,6 +487,7 @@ dependencies = [
  "log",
  "serde",
  "serde_json",
+ "serde_test",
  "structopt",
  "toml",
 ]

@@ -6,8 +6,9 @@ use std::{cmp::Reverse, error::Error, fmt::Display, iter::once, path::PathBuf};
 use structopt::StructOpt;
 
 use crate::{
-  config::Config, metadata::Metadata, metadata::Priority, task::Status, task::Task,
-  task::TaskManager, task::UID,
+  config::{Config, HighlightedString},
+  metadata::{Metadata, Priority},
+  task::{Status, Task, TaskManager, UID},
 };
 
 #[derive(Debug, StructOpt)]
@@ -135,11 +136,8 @@ pub fn list_tasks(
     display_task_header(config, &display_opts);
   }
 
-  let mut parity = true;
   for (&uid, task) in tasks {
-    display_task_inline(config, uid, task, parity, &display_opts);
-
-    parity = !parity;
+    display_task_inline(config, uid, task, &display_opts);
   }
 
   Ok(())
@@ -176,7 +174,7 @@ pub fn add_task(
   let display_opts = DisplayOptions::new(config, once((uid, &task)));
 
   display_task_header(config, &display_opts);
-  display_task_inline(config, uid, &task, true, &display_opts);
+  display_task_inline(config, uid, &task, &display_opts);
 
   Ok(())
 }
@@ -397,44 +395,33 @@ fn display_task_header(config: &Config, opts: &DisplayOptions) {
 }
 
 /// Display a task to the user.
-fn display_task_inline(
-  config: &Config,
-  uid: UID,
-  task: &Task,
-  parity: bool,
-  opts: &DisplayOptions,
-) {
+fn display_task_inline(config: &Config, uid: UID, task: &Task, opts: &DisplayOptions) {
   let (name, status);
   let task_status = task.status();
 
   match task_status {
     Status::Todo => {
-      if parity {
-        name = task.name().bright_white().on_black();
-      } else {
-        name = task.name().bright_white().on_bright_black();
-      }
-      status = config.todo_alias().clone().bold().magenta();
+      name = config.colors.description.todo.highlight(task.name());
+      status = config.colors.status.todo.highlight(config.todo_alias());
     }
 
     Status::Ongoing => {
-      name = task.name().black().on_bright_green();
-      status = config.wip_alias().clone().bold().green();
+      name = config.colors.description.ongoing.highlight(task.name());
+      status = config.colors.status.ongoing.highlight(config.wip_alias());
     }
 
     Status::Done => {
-      name = task.name().bright_black().dimmed().on_black();
-      status = config.done_alias().clone().dimmed().bright_black();
+      name = config.colors.description.done.highlight(task.name());
+      status = config.colors.status.done.highlight(config.done_alias());
     }
 
     Status::Cancelled => {
-      name = task
-        .name()
-        .bright_black()
-        .dimmed()
-        .strikethrough()
-        .on_black();
-      status = config.cancelled_alias().clone().dimmed().bright_red();
+      name = config.colors.description.cancelled.highlight(task.name());
+      status = config
+        .colors
+        .status
+        .cancelled
+        .highlight(config.cancelled_alias());
     }
   }
 
@@ -461,7 +448,7 @@ fn display_task_inline(
   if display_empty_cols || opts.has_priorities {
     print!(
       " {priority:<prio_width$}",
-      priority = friendly_priority(task),
+      priority = friendly_priority(task, config),
       prio_width = config.prio_col_name().len(),
     );
   }
@@ -507,16 +494,16 @@ pub fn friendly_duration(dur: Duration) -> String {
   }
 }
 
-fn friendly_priority(task: &Task) -> impl Display {
+fn friendly_priority(task: &Task, config: &Config) -> impl Display {
   if let Some(prio) = task.priority() {
     match prio {
-      Priority::Low => "LOW".bright_black().dimmed(),
-      Priority::Medium => "MED".blue(),
-      Priority::High => "HIGH".red(),
-      Priority::Critical => "CRIT".black().on_bright_red(),
+      Priority::Low => config.colors.priority.low.highlight("LOW"),
+      Priority::Medium => config.colors.priority.medium.highlight("MED"),
+      Priority::High => config.colors.priority.high.highlight("HIGH"),
+      Priority::Critical => config.colors.priority.critical.highlight("CRIT"),
     }
   } else {
-    "".normal()
+    HighlightedString::regular("")
   }
 }
 
@@ -524,7 +511,7 @@ fn friendly_project(task: &Task) -> impl Display {
   if let Some(project) = task.project() {
     project.italic()
   } else {
-    "".normal()
+    "".into()
   }
 }
 

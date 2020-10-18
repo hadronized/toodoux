@@ -25,3 +25,6 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 structopt = "0.3.13"
 toml = "0.5.6"
+
+[dev-dependencies]
+serde_test = "1"
