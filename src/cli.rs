@@ -4,11 +4,13 @@ use chrono::{Duration, Utc};
 use colored::Colorize;
 use std::{cmp::Reverse, error::Error, fmt::Display, iter::once, path::PathBuf};
 use structopt::StructOpt;
+use unicode_width::UnicodeWidthStr as _;
 
 use crate::{
   config::{Config, HighlightedString},
   metadata::{Metadata, Priority},
   task::{Status, Task, TaskManager, UID},
+  term::Term,
 };
 
 #[derive(Debug, StructOpt)]
@@ -107,6 +109,7 @@ pub enum SubCommand {
 /// List tasks.
 pub fn list_tasks(
   config: &Config,
+  term: &impl Term,
   todo: bool,
   start: bool,
   cancelled: bool,
@@ -128,7 +131,8 @@ pub fn list_tasks(
   tasks.sort_by_key(|&(uid, task)| Reverse((task.priority(), task.age(), task.status(), uid)));
 
   // precompute a bunch of data for display widths / padding / etc.
-  let display_opts = DisplayOptions::new(config, tasks.iter().map(|&(uid, task)| (*uid, task)));
+  let display_opts =
+    DisplayOptions::new(config, term, tasks.iter().map(|&(uid, task)| (*uid, task)));
 
   // actual display
   // only display header if there are tasks to display
@@ -146,6 +150,7 @@ pub fn list_tasks(
 /// Add a new task.
 pub fn add_task(
   config: &Config,
+  term: &impl Term,
   start: bool,
   done: bool,
   content: Vec<String>,
@@ -171,7 +176,7 @@ pub fn add_task(
   task_mgr.save(config)?;
 
   // display options
-  let display_opts = DisplayOptions::new(config, once((uid, &task)));
+  let display_opts = DisplayOptions::new(config, term, once((uid, &task)));
 
   display_task_header(config, &display_opts);
   display_task_inline(config, uid, &task, &display_opts);
@@ -216,11 +221,19 @@ struct DisplayOptions {
   has_priorities: bool,
   /// Whether we have a project in at least one task.
   has_projects: bool,
+  /// Offset to use for the description column.
+  description_offset: usize,
+  /// Maximum columns to fit in the description column.
+  max_description_cols: usize,
 }
 
 impl DisplayOptions {
   /// Create a new renderer for a set of tasks.
-  fn new<'a>(config: &Config, tasks: impl IntoIterator<Item = (UID, &'a Task)>) -> Self {
+  fn new<'a>(
+    config: &Config,
+    term: &impl Term,
+    tasks: impl IntoIterator<Item = (UID, &'a Task)>,
+  ) -> Self {
     // FIXME: switch to a builder pattern here, because it’s starting to becoming a mess
     let (
       task_uid_width,
@@ -270,7 +283,7 @@ impl DisplayOptions {
       },
     );
 
-    Self {
+    let mut opts = Self {
       task_uid_width: task_uid_width.max(config.uid_col_name().len()),
       age_width: age_width.max(config.age_col_name().len()),
       spent_width: spent_width.max(config.spent_col_name().len()),
@@ -280,7 +293,14 @@ impl DisplayOptions {
       has_spent_time,
       has_priorities,
       has_projects,
-    }
+      description_offset: 0,
+      max_description_cols: 0,
+    };
+
+    opts.description_offset = opts.guess_description_col_offset(config);
+    opts.max_description_cols = term.dimensions().unwrap()[0] - opts.description_offset;
+
+    opts
   }
 
   /// Guess the number of characters needed to represent a number.
@@ -347,6 +367,53 @@ impl DisplayOptions {
   fn guess_task_project_width(task: &Task) -> Option<usize> {
     task.project().map(str::len)
   }
+
+  /// Compute the column offset at which descriptions can start.
+  ///
+  /// The way we compute this is by summing all the display width and adding the require padding.
+  fn guess_description_col_offset(&self, config: &Config) -> usize {
+    let spent_width;
+    let prio_width;
+    let project_width;
+
+    if config.display_empty_cols() {
+      spent_width = self.spent_width + 1;
+      prio_width = config.prio_col_name().len() + 1; // FIXME
+      project_width = self.project_width + 1;
+    } else {
+      // compute spent time if any
+      if self.has_spent_time {
+        spent_width = self.spent_width + 1;
+      } else {
+        spent_width = 0;
+      }
+
+      // compute priority width if any
+      if self.has_priorities {
+        prio_width = config.prio_col_name().len() + 1; // FIXME
+      } else {
+        prio_width = 0;
+      }
+
+      // compute project width if any
+      if self.has_projects {
+        project_width = self.project_width + 1; // FIXME
+      } else {
+        project_width = 0;
+      }
+    }
+
+    // The “+ 1” are there because of the blank spaces we have in the output to separate columns.
+    1 + self.task_uid_width
+      + 1
+      + self.age_width
+      + 1
+      + spent_width
+      + prio_width
+      + project_width
+      + self.status_width
+      + 1 // to end up on the first column in the description
+  }
 }
 
 /// Display the header of tasks.
@@ -390,33 +457,30 @@ fn display_task_header(config: &Config, opts: &DisplayOptions) {
     status = config.status_col_name().underline(),
     status_width = opts.status_width,
     description = config.description_col_name().underline(),
-    description_width = opts.description_width,
+    description_width = opts.description_width.min(opts.max_description_cols),
   );
 }
 
 /// Display a task to the user.
 fn display_task_inline(config: &Config, uid: UID, task: &Task, opts: &DisplayOptions) {
-  let (name, status);
+  let status;
+  let task_name = task.name();
   let task_status = task.status();
 
   match task_status {
     Status::Todo => {
-      name = config.colors.description.todo.highlight(task.name());
       status = config.colors.status.todo.highlight(config.todo_alias());
     }
 
     Status::Ongoing => {
-      name = config.colors.description.ongoing.highlight(task.name());
       status = config.colors.status.ongoing.highlight(config.wip_alias());
     }
 
     Status::Done => {
-      name = config.colors.description.done.highlight(task.name());
       status = config.colors.status.done.highlight(config.done_alias());
     }
 
     Status::Cancelled => {
-      name = config.colors.description.cancelled.highlight(task.name());
       status = config
         .colors
         .status
@@ -461,13 +525,68 @@ fn display_task_inline(config: &Config, uid: UID, task: &Task, opts: &DisplayOpt
     );
   }
 
-  println!(
-    " {status:<status_width$} {name:<name_width$}",
+  print!(
+    " {status:<status_width$}",
     status = status,
     status_width = opts.status_width,
-    name = name,
-    name_width = opts.description_width,
   );
+
+  display_description(config, opts, task_status, task_name);
+}
+
+/// Display a description by respecting the allowed description column size.
+fn display_description(config: &Config, opts: &DisplayOptions, status: Status, description: &str) {
+  let mut line_index = 0;
+  let mut offset = 0;
+  let mut line_buffer = String::new();
+
+  print!(" ");
+  for word in description.split_ascii_whitespace() {
+    let word_size = word.width(); // TODO: check what to do about CJK
+    let next_offset = offset + word_size + 1; // + 1 for space/ellipsis
+
+    if next_offset >= opts.max_description_cols {
+      // we’ve passed the end of the line; break into another line
+      line_index += 1;
+      offset = 0;
+
+      if line_index >= config.max_description_lines() {
+        line_buffer.push('…');
+        break;
+      } else {
+        let hl_description = highlight_description_line(config, status, &line_buffer);
+        print!(
+          "{:<width$}",
+          hl_description,
+          width = opts.max_description_cols
+        );
+
+        line_buffer.clear();
+        print!("{:<width$}", "", width = opts.description_offset);
+      }
+    }
+
+    offset += word_size + 1;
+    line_buffer.push_str(word);
+    line_buffer.push(' ');
+  }
+
+  let hl_description = highlight_description_line(config, status, &line_buffer);
+  println!(
+    "{:<width$}",
+    hl_description,
+    width = opts.max_description_cols
+  );
+}
+
+/// Highlight a description line
+fn highlight_description_line(config: &Config, status: Status, line: &str) -> impl Display {
+  match status {
+    Status::Todo => config.colors.description.todo.highlight(line),
+    Status::Ongoing => config.colors.description.ongoing.highlight(line),
+    Status::Done => config.colors.description.done.highlight(line),
+    Status::Cancelled => config.colors.description.cancelled.highlight(line),
+  }
 }
 
 /// Find out the age of a task and get a friendly representation.
@@ -535,6 +654,24 @@ fn friendly_spent_time(dur: Duration, status: Status) -> impl Display {
 mod unit_tests {
   use super::*;
 
+  use crate::config::{ColorConfig, MainConfig};
+
+  struct DummyTerm {
+    dimensions: [usize; 2],
+  }
+
+  impl DummyTerm {
+    pub fn new(dimensions: [usize; 2]) -> Self {
+      Self { dimensions }
+    }
+  }
+
+  impl crate::term::Term for DummyTerm {
+    fn dimensions(&self) -> Option<[usize; 2]> {
+      Some(self.dimensions)
+    }
+  }
+
   #[test]
   fn guess_number_width() {
     for i in 0..10 {
@@ -568,5 +705,36 @@ mod unit_tests {
       DisplayOptions::guess_duration_width(&Duration::minutes(59)),
       5
     ); // 59min
+  }
+
+  #[test]
+  fn display_options_term_width() {
+    let main_config = MainConfig::new(
+      "N/A",
+      "TODO",
+      "WIP",
+      "DONE",
+      "CANCELLED",
+      "UID",
+      "Age",
+      "Spent",
+      "Prio",
+      "Project",
+      "Status",
+      "Desc",
+      false,
+      2,
+    );
+    let config = Config::new(main_config, ColorConfig::default());
+    let tasks = &[(UID::default(), &Task::new("Foo", vec![]))];
+    let term = DummyTerm::new([100, 1]);
+    let opts = DisplayOptions::new(&config, &term, tasks.iter().copied());
+
+    let description_offset = " UID ".len() + "Age ".len() + "Status ".len();
+    assert_eq!(opts.description_offset, description_offset,);
+    assert_eq!(
+      opts.max_description_cols,
+      term.dimensions().unwrap()[0] - description_offset
+    );
   }
 }

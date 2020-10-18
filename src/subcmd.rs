@@ -6,17 +6,19 @@ use crate::{
   cli::{add_task, edit_task, list_tasks, SubCommand},
   config::Config,
   task::{Status, TaskManager, UID},
+  term::Term,
 };
 
 pub fn run_subcmd(
   config: Config,
+  term: impl Term,
   subcmd: Option<SubCommand>,
   task_uid: Option<UID>,
 ) -> Result<(), Box<dyn Error>> {
   match subcmd {
     // default subcommand
     None => {
-      default_list(&config, true, true, false, false, false)?;
+      default_list(&config, &term, true, true, false, false, false)?;
     }
 
     Some(subcmd) => {
@@ -30,7 +32,7 @@ pub fn run_subcmd(
           content,
         } => {
           if task_uid.is_none() {
-            add_task(&config, start, done, content)?;
+            add_task(&config, &term, start, done, content)?;
           } else {
             println!(
               "{}",
@@ -95,7 +97,7 @@ pub fn run_subcmd(
           all,
           ..
         } => {
-          default_list(&config, todo, start, cancelled, done, all)?;
+          default_list(&config, &term, todo, start, cancelled, done, all)?;
         }
       }
     }
@@ -106,6 +108,7 @@ pub fn run_subcmd(
 
 fn default_list(
   config: &Config,
+  term: &impl Term,
   mut todo: bool,
   mut start: bool,
   mut cancelled: bool,
@@ -124,5 +127,5 @@ fn default_list(
     start = true;
   }
 
-  list_tasks(config, todo, start, cancelled, done)
+  list_tasks(config, term, todo, start, cancelled, done)
 }
