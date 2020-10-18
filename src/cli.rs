@@ -6,8 +6,9 @@ use std::{cmp::Reverse, error::Error, fmt::Display, iter::once, path::PathBuf};
 use structopt::StructOpt;
 
 use crate::{
-  config::Config, metadata::Metadata, metadata::Priority, task::Status, task::Task,
-  task::TaskManager, task::UID,
+  config::{Config, HighlightedString},
+  metadata::{Metadata, Priority},
+  task::{Status, Task, TaskManager, UID},
 };
 
 #[derive(Debug, StructOpt)]
@@ -400,27 +401,27 @@ fn display_task_inline(config: &Config, uid: UID, task: &Task, opts: &DisplayOpt
 
   match task_status {
     Status::Todo => {
-      name = config.colors.description.todo.apply(task.name());
-      status = config.colors.status.todo.apply(config.todo_alias());
+      name = config.colors.description.todo.highlight(task.name());
+      status = config.colors.status.todo.highlight(config.todo_alias());
     }
 
     Status::Ongoing => {
-      name = config.colors.description.ongoing.apply(task.name());
-      status = config.colors.status.ongoing.apply(config.wip_alias());
+      name = config.colors.description.ongoing.highlight(task.name());
+      status = config.colors.status.ongoing.highlight(config.wip_alias());
     }
 
     Status::Done => {
-      name = config.colors.description.done.apply(task.name());
-      status = config.colors.status.done.apply(config.done_alias());
+      name = config.colors.description.done.highlight(task.name());
+      status = config.colors.status.done.highlight(config.done_alias());
     }
 
     Status::Cancelled => {
-      name = config.colors.description.cancelled.apply(task.name());
+      name = config.colors.description.cancelled.highlight(task.name());
       status = config
         .colors
         .status
         .cancelled
-        .apply(config.cancelled_alias());
+        .highlight(config.cancelled_alias());
     }
   }
 
@@ -496,13 +497,13 @@ pub fn friendly_duration(dur: Duration) -> String {
 fn friendly_priority(task: &Task, config: &Config) -> impl Display {
   if let Some(prio) = task.priority() {
     match prio {
-      Priority::Low => config.colors.priority.low.apply("LOW"),
-      Priority::Medium => config.colors.priority.medium.apply("MED"),
-      Priority::High => config.colors.priority.high.apply("HIGH"),
-      Priority::Critical => config.colors.priority.critical.apply("CRIT"),
+      Priority::Low => config.colors.priority.low.highlight("LOW"),
+      Priority::Medium => config.colors.priority.medium.highlight("MED"),
+      Priority::High => config.colors.priority.high.highlight("HIGH"),
+      Priority::Critical => config.colors.priority.critical.highlight("CRIT"),
     }
   } else {
-    "".into()
+    HighlightedString::regular("")
   }
 }
 
@@ -510,7 +511,7 @@ fn friendly_project(task: &Task) -> impl Display {
   if let Some(project) = task.project() {
     project.italic()
   } else {
-    "".normal()
+    "".into()
   }
 }
 

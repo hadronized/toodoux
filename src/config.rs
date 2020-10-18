@@ -1,18 +1,18 @@
 //! Initiate the configuration file creation when not present.
 
-use colored::{ColoredString, Colorize};
+use colored::{Color as Col, ColoredString, Colorize};
 use core::fmt::Formatter;
 use scarlet::color::RGBColor;
-use serde::de;
-use serde::de::Visitor;
-use serde::{Deserialize, Serialize};
-use std::error::Error;
-use std::fmt;
-use std::fs;
-use std::path::{Path, PathBuf};
-use std::str::FromStr;
-// just for avoiding some typing
-use colored::Color as Col;
+use serde::{
+  de::{self, Visitor},
+  Deserialize, Serialize,
+};
+use std::{
+  error::Error,
+  fmt, fs,
+  path::{Path, PathBuf},
+  str::FromStr,
+};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Config {
@@ -203,15 +203,9 @@ impl Config {
   }
 }
 
-macro_rules! color {
-  ($name:ident) => {
-    Color(Col::$name)
-  };
-}
-
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
-pub enum Style {
+pub enum StyleAttribute {
   Bold,
   Dimmed,
   Underline,
@@ -222,19 +216,18 @@ pub enum Style {
   Strikethrough,
 }
 
-impl Style {
-  /// applies this Style to a ColoredString.
-  /// this is not public as to not leak the implementation that uses ColoredString
-  fn apply(&self, s: ColoredString) -> ColoredString {
+impl StyleAttribute {
+  /// Apply this style attribute to the input colored string.
+  fn apply_style(&self, s: ColoredString) -> ColoredString {
     match self {
-      Style::Bold => s.bold(),
-      Style::Dimmed => s.dimmed(),
-      Style::Underline => s.underline(),
-      Style::Reversed => s.reversed(),
-      Style::Italic => s.italic(),
-      Style::Blink => s.blink(),
-      Style::Hidden => s.hidden(),
-      Style::Strikethrough => s.strikethrough(),
+      StyleAttribute::Bold => s.bold(),
+      StyleAttribute::Dimmed => s.dimmed(),
+      StyleAttribute::Underline => s.underline(),
+      StyleAttribute::Reversed => s.reversed(),
+      StyleAttribute::Italic => s.italic(),
+      StyleAttribute::Blink => s.blink(),
+      StyleAttribute::Hidden => s.hidden(),
+      StyleAttribute::Strikethrough => s.strikethrough(),
     }
   }
 }
@@ -248,34 +241,34 @@ pub struct ColorConfig {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct TaskDescriptionColorConfig {
-  pub ongoing: ColorOptions,
-  pub todo: ColorOptions,
-  pub done: ColorOptions,
-  pub cancelled: ColorOptions,
+  pub ongoing: Highlight,
+  pub todo: Highlight,
+  pub done: Highlight,
+  pub cancelled: Highlight,
 }
 
 impl Default for TaskDescriptionColorConfig {
   fn default() -> Self {
     Self {
-      ongoing: ColorOptions {
-        foreground: Some(color!(Black)),
-        background: Some(color!(BrightGreen)),
-        styles: vec![],
+      ongoing: Highlight {
+        foreground: Some(Color(Col::Black)),
+        background: Some(Color(Col::BrightGreen)),
+        style: vec![],
       },
-      todo: ColorOptions {
-        foreground: Some(color!(BrightWhite)),
-        background: Some(color!(Black)),
-        styles: vec![],
+      todo: Highlight {
+        foreground: Some(Color(Col::BrightWhite)),
+        background: Some(Color(Col::Black)),
+        style: vec![],
       },
-      done: ColorOptions {
-        foreground: Some(color!(BrightBlack)),
-        background: Some(color!(Black)),
-        styles: vec![Style::Dimmed],
+      done: Highlight {
+        foreground: Some(Color(Col::BrightBlack)),
+        background: Some(Color(Col::Black)),
+        style: vec![StyleAttribute::Dimmed],
       },
-      cancelled: ColorOptions {
-        foreground: Some(color!(BrightBlack)),
-        background: Some(color!(Black)),
-        styles: vec![Style::Dimmed, Style::Strikethrough],
+      cancelled: Highlight {
+        foreground: Some(Color(Col::BrightBlack)),
+        background: Some(Color(Col::Black)),
+        style: vec![StyleAttribute::Dimmed, StyleAttribute::Strikethrough],
       },
     }
   }
@@ -283,34 +276,34 @@ impl Default for TaskDescriptionColorConfig {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct TaskStatusColorConfig {
-  pub ongoing: ColorOptions,
-  pub todo: ColorOptions,
-  pub done: ColorOptions,
-  pub cancelled: ColorOptions,
+  pub ongoing: Highlight,
+  pub todo: Highlight,
+  pub done: Highlight,
+  pub cancelled: Highlight,
 }
 
 impl Default for TaskStatusColorConfig {
   fn default() -> Self {
     Self {
-      ongoing: ColorOptions {
-        foreground: Some(color!(Green)),
+      ongoing: Highlight {
+        foreground: Some(Color(Col::Green)),
         background: None,
-        styles: vec![Style::Bold],
+        style: vec![StyleAttribute::Bold],
       },
-      todo: ColorOptions {
-        foreground: Some(color!(Magenta)),
+      todo: Highlight {
+        foreground: Some(Color(Col::Magenta)),
         background: None,
-        styles: vec![Style::Bold],
+        style: vec![StyleAttribute::Bold],
       },
-      done: ColorOptions {
-        foreground: Some(color!(BrightBlack)),
+      done: Highlight {
+        foreground: Some(Color(Col::BrightBlack)),
         background: None,
-        styles: vec![Style::Dimmed],
+        style: vec![StyleAttribute::Dimmed],
       },
-      cancelled: ColorOptions {
-        foreground: Some(color!(BrightRed)),
+      cancelled: Highlight {
+        foreground: Some(Color(Col::BrightRed)),
         background: None,
-        styles: vec![Style::Dimmed],
+        style: vec![StyleAttribute::Dimmed],
       },
     }
   }
@@ -318,52 +311,64 @@ impl Default for TaskStatusColorConfig {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct PriorityColorConfig {
-  pub low: ColorOptions,
-  pub medium: ColorOptions,
-  pub high: ColorOptions,
-  pub critical: ColorOptions,
+  pub low: Highlight,
+  pub medium: Highlight,
+  pub high: Highlight,
+  pub critical: Highlight,
 }
 
 impl Default for PriorityColorConfig {
   fn default() -> Self {
     Self {
-      low: ColorOptions {
-        foreground: Some(color!(BrightBlack)),
+      low: Highlight {
+        foreground: Some(Color(Col::BrightBlack)),
         background: None,
-        styles: vec![Style::Dimmed],
+        style: vec![StyleAttribute::Dimmed],
       },
-      medium: ColorOptions {
-        foreground: Some(color!(Blue)),
+      medium: Highlight {
+        foreground: Some(Color(Col::Blue)),
         background: None,
-        styles: vec![],
+        style: vec![],
       },
-      high: ColorOptions {
-        foreground: Some(color!(Red)),
+      high: Highlight {
+        foreground: Some(Color(Col::Red)),
         background: None,
-        styles: vec![],
+        style: vec![],
       },
-      critical: ColorOptions {
-        foreground: Some(color!(Black)),
-        background: Some(color!(BrightRed)),
-        styles: vec![],
+      critical: Highlight {
+        foreground: Some(Color(Col::Black)),
+        background: Some(Color(Col::BrightRed)),
+        style: vec![],
       },
     }
   }
 }
 
-/// an option that includes all console text formatting
+/// Highlight definition.
+///
+/// Contains foreground and background colors as well as the style to use.
 #[derive(Debug, Deserialize, Serialize)]
-pub struct ColorOptions {
+pub struct Highlight {
+  /// Foreground color.
+  ///
+  /// Leaving it empty implies using the default foreground color of your terminal
   pub foreground: Option<Color>,
+
+  /// Background color.
+  ///
+  /// Leaving it empty implies using the default background color of your terminal
   pub background: Option<Color>,
+
+  /// Style attributes to use.
   #[serde(default, skip_serializing_if = "Vec::is_empty")]
-  pub styles: Vec<Style>,
+  pub style: Vec<StyleAttribute>,
 }
 
-impl ColorOptions {
-  /// applies the color options to a string
-  pub fn apply(&self, s: &str) -> String {
-    let mut colored: ColoredString = s.into();
+impl Highlight {
+  /// Apply the highlight to an input string.
+  pub fn highlight(&self, input: impl AsRef<str>) -> HighlightedString {
+    let mut colored: ColoredString = input.as_ref().into();
+
     if let Some(foreground) = &self.foreground {
       colored = colored.color(foreground.0);
     }
@@ -372,18 +377,38 @@ impl ColorOptions {
       colored = colored.on_color(background.0);
     }
 
-    for s in &self.styles {
-      colored = s.apply(colored);
+    for s in &self.style {
+      colored = s.apply_style(colored);
     }
 
-    // this is the only method i could find to get a formatted String from a ColoredString
-    format!("{}", colored)
+    HighlightedString(colored)
+  }
+}
+
+/// Highlighted string — i.e. all color information and styles have been applied.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct HighlightedString(ColoredString);
+
+impl HighlightedString {
+  fn new(colored: ColoredString) -> Self {
+    HighlightedString(colored)
+  }
+
+  /// Wrap a regular string that is not highlighted.
+  pub fn regular(s: impl AsRef<str>) -> Self {
+    HighlightedString(s.as_ref().into())
+  }
+}
+
+impl fmt::Display for HighlightedString {
+  fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+    self.0.fmt(f)
   }
 }
 
 /// a wrapper around colored::Color in order to implement serialization
 #[derive(Debug, PartialEq)]
-pub struct Color(pub colored::Color);
+pub struct Color(pub Col);
 
 impl<'de> Deserialize<'de> for Color {
   fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
@@ -391,31 +416,26 @@ impl<'de> Deserialize<'de> for Color {
     D: serde::Deserializer<'de>,
   {
     struct ColorVisitor;
-    // the message of what the expected value is
-    const EXPECTED: &str = "a hexadecimal color value, or X11 Color name";
+
+    const EXPECTING: &str = "a color name or hexadecimal color";
+
     impl<'de> Visitor<'de> for ColorVisitor {
       type Value = Color;
+
       fn expecting(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
-        formatter.write_str(EXPECTED)
+        formatter.write_str(EXPECTING)
       }
 
       fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
       where
         E: de::Error,
       {
-        // try to use from_str to get color
-        // if this doesn't work we try to parse it as hex
-        // map to option so we dont have to worry about error types
-        match colored::Color::from_str(value).ok() {
-          None => {
-            // try to decode from hex, then from name
-            let rgb = match RGBColor::from_hex_code(value) {
-              Err(_) => RGBColor::from_color_name(value),
-              c => c,
-            };
-
-            if let Ok(c) = rgb {
-              Some(colored::Color::TrueColor {
+        // try to use from_str to get color; if this doesn't work we try to parse it as hex
+        Col::from_str(value)
+          .ok()
+          .or_else(|| {
+            if let Ok(c) = RGBColor::from_hex_code(value) {
+              Some(Col::TrueColor {
                 r: c.int_r(),
                 g: c.int_g(),
                 b: c.int_b(),
@@ -423,20 +443,15 @@ impl<'de> Deserialize<'de> for Color {
             } else {
               None
             }
-          }
-          c => c,
-        }
-        // map to wrapper type from colored::Color
-        .map(|c| Color(c))
-        // map to result with serde error if color was invalid
-        .ok_or_else(|| {
-          E::invalid_value(
-            de::Unexpected::Str(value),
-            &EXPECTED,
-          )
-        })
+          })
+          .map(Color)
+          .ok_or_else(|| {
+            // in the case we were unable to parse either a color name or hexadecimal color, we emit a serde error
+            E::invalid_value(de::Unexpected::Str(value), &EXPECTING)
+          })
       }
     }
+
     deserializer.deserialize_str(ColorVisitor)
   }
 }
@@ -448,7 +463,7 @@ impl Serialize for Color {
   {
     // this is a bit of a hack in order to extend the life time of a string
     // so we can return a ref to it from a match
-    let s;
+    let true_color;
     // this is a reversed version of colored::Color::from_str()
     // with hex added
     let clr = match self.0 {
@@ -469,10 +484,11 @@ impl Serialize for Color {
       Col::BrightCyan => "bright cyan",
       Col::BrightWhite => "bright white",
       Col::TrueColor { r, g, b } => {
-        s = format!("#{:02x}{:02x}{:02x}", r, g, b);
-        &s
+        true_color = format!("#{:02x}{:02x}{:02x}", r, g, b);
+        &true_color
       }
     };
+
     serializer.serialize_str(clr)
   }
 }
@@ -484,7 +500,7 @@ mod tests {
 
   #[test]
   fn color_hex() {
-    let c = Color(colored::Color::TrueColor { r: 255, g: 0, b: 0 });
+    let c = Color(Col::TrueColor { r: 255, g: 0, b: 0 });
     assert_tokens(&c, &[Token::Str("#ff0000")]);
 
     // shorthands
@@ -498,42 +514,32 @@ mod tests {
   }
   #[test]
   fn color_colored_name() {
-    let c = color!(White);
+    let c = Color(Col::White);
     assert_tokens(&c, &[Token::Str("white")])
-  }
-
-  #[test]
-  fn colored_x11_name() {
-    let c = Color(colored::Color::TrueColor {
-      r: 255,
-      g: 0,
-      b: 255,
-    });
-    assert_de_tokens(&c, &[Token::Str("fuchsia")])
   }
 
   #[test]
   fn apply_color_options() {
     // with color
     {
-      let expected = "test".on_black().white().bold();
-      let opts = ColorOptions {
-        background: Some(color!(Black)),
-        foreground: Some(color!(White)),
-        styles: vec![Style::Bold],
+      let expected = HighlightedString::new("test".on_black().white().bold());
+      let opts = Highlight {
+        background: Some(Color(Col::Black)),
+        foreground: Some(Color(Col::White)),
+        style: vec![StyleAttribute::Bold],
       };
-      assert_eq!(format!("{}", expected), opts.apply("test"));
+      assert_eq!(expected, opts.highlight("test"));
     }
 
     // only styles
     {
-      let expected = "test".italic().bold();
-      let opts = ColorOptions {
+      let expected = HighlightedString::new("test".italic().bold());
+      let opts = Highlight {
         background: None,
         foreground: None,
-        styles: vec![Style::Bold, Style::Italic],
+        style: vec![StyleAttribute::Bold, StyleAttribute::Italic],
       };
-      assert_eq!(format!("{}", expected), opts.apply("test"));
+      assert_eq!(expected, opts.highlight("test"));
     }
   }
 }
