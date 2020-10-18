@@ -502,7 +502,7 @@ fn friendly_priority(task: &Task, config: &Config) -> impl Display {
       Priority::Critical => config.colors.priority.critical.apply("CRIT"),
     }
   } else {
-    "".normal()
+    "".into()
   }
 }
 

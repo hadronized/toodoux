@@ -11,6 +11,8 @@ use std::fmt;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
+// just for avoiding some typing
+use colored::Color as Col;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Config {
@@ -203,13 +205,7 @@ impl Config {
 
 macro_rules! color {
   ($name:ident) => {
-    Color(colored!($name))
-  };
-}
-
-macro_rules! colored {
-  ($name:ident) => {
-    colored::Color::$name
+    Color(Col::$name)
   };
 }
 
@@ -227,18 +223,18 @@ pub enum Style {
 }
 
 impl Style {
-  /// returns the function used to apply this `Style` to a `ColoredString`
-  /// this may be a bit unconventional, but it works
-  pub fn apply_func(&self) -> fn(ColoredString) -> ColoredString {
+  /// applies this Style to a ColoredString.
+  /// this is not public as to not leak the implementation that uses ColoredString
+  fn apply(&self, s: ColoredString) -> ColoredString {
     match self {
-      Style::Bold => ColoredString::bold,
-      Style::Dimmed => ColoredString::dimmed,
-      Style::Underline => ColoredString::underline,
-      Style::Reversed => ColoredString::reversed,
-      Style::Italic => ColoredString::italic,
-      Style::Blink => ColoredString::blink,
-      Style::Hidden => ColoredString::hidden,
-      Style::Strikethrough => ColoredString::strikethrough,
+      Style::Bold => s.bold(),
+      Style::Dimmed => s.dimmed(),
+      Style::Underline => s.underline(),
+      Style::Reversed => s.reversed(),
+      Style::Italic => s.italic(),
+      Style::Blink => s.blink(),
+      Style::Hidden => s.hidden(),
+      Style::Strikethrough => s.strikethrough(),
     }
   }
 }
@@ -366,7 +362,7 @@ pub struct ColorOptions {
 
 impl ColorOptions {
   /// applies the color options to a string
-  pub fn apply(&self, s: &str) -> ColoredString {
+  pub fn apply(&self, s: &str) -> String {
     let mut colored: ColoredString = s.into();
     if let Some(foreground) = &self.foreground {
       colored = colored.color(foreground.0);
@@ -376,11 +372,12 @@ impl ColorOptions {
       colored = colored.on_color(background.0);
     }
 
-    for f in self.styles.iter().map(|s| s.apply_func()) {
-      colored = f(colored);
+    for s in &self.styles {
+      colored = s.apply(colored);
     }
 
-    colored
+    // this is the only method i could find to get a formatted String from a ColoredString
+    format!("{}", colored)
   }
 }
 
@@ -455,23 +452,23 @@ impl Serialize for Color {
     // this is a reversed version of colored::Color::from_str()
     // with hex added
     let clr = match self.0 {
-      colored!(Black) => "black",
-      colored!(Red) => "red",
-      colored!(Green) => "green",
-      colored!(Yellow) => "yellow",
-      colored!(Blue) => "blue",
-      colored!(Magenta) => "magenta",
-      colored!(Cyan) => "cyan",
-      colored!(White) => "white",
-      colored!(BrightBlack) => "bright black",
-      colored!(BrightRed) => "bright red",
-      colored!(BrightGreen) => "bright green",
-      colored!(BrightYellow) => "bright yellow",
-      colored!(BrightBlue) => "bright blue",
-      colored!(BrightMagenta) => "bright magenta",
-      colored!(BrightCyan) => "bright cyan",
-      colored!(BrightWhite) => "bright white",
-      colored::Color::TrueColor { r, g, b } => {
+      Col::Black => "black",
+      Col::Red => "red",
+      Col::Green => "green",
+      Col::Yellow => "yellow",
+      Col::Blue => "blue",
+      Col::Magenta => "magenta",
+      Col::Cyan => "cyan",
+      Col::White => "white",
+      Col::BrightBlack => "bright black",
+      Col::BrightRed => "bright red",
+      Col::BrightGreen => "bright green",
+      Col::BrightYellow => "bright yellow",
+      Col::BrightBlue => "bright blue",
+      Col::BrightMagenta => "bright magenta",
+      Col::BrightCyan => "bright cyan",
+      Col::BrightWhite => "bright white",
+      Col::TrueColor { r, g, b } => {
         s = format!("#{:02x}{:02x}{:02x}", r, g, b);
         &s
       }
@@ -525,7 +522,7 @@ mod tests {
         foreground: Some(color!(White)),
         styles: vec![Style::Bold],
       };
-      assert_eq!(expected, opts.apply("test"));
+      assert_eq!(format!("{}", expected), opts.apply("test"));
     }
 
     // only styles
@@ -536,7 +533,7 @@ mod tests {
         foreground: None,
         styles: vec![Style::Bold, Style::Italic],
       };
-      assert_eq!(expected, opts.apply("test"));
+      assert_eq!(format!("{}", expected), opts.apply("test"));
     }
   }
 }

@@ -425,7 +425,7 @@ It contains the following keys:
 - `editor`: if `$EDITOR` is not set, this variable will be used to edit notes. If this variable is set while `$EDITOR`
   is set too, `$EDITOR` has predominance.
 
-## Color Config
+### Color Config
 
 It also contains a section for configuring colors, `colors`
 
