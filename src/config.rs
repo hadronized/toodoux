@@ -2,7 +2,6 @@
 
 use colored::{Color as Col, ColoredString, Colorize};
 use core::fmt::Formatter;
-use scarlet::color::RGBColor;
 use serde::{
   de::{self, Visitor},
   Deserialize, Serialize,
@@ -390,10 +389,6 @@ impl Highlight {
 pub struct HighlightedString(ColoredString);
 
 impl HighlightedString {
-  fn new(colored: ColoredString) -> Self {
-    HighlightedString(colored)
-  }
-
   /// Wrap a regular string that is not highlighted.
   pub fn regular(s: impl AsRef<str>) -> Self {
     HighlightedString(s.as_ref().into())
@@ -409,6 +404,51 @@ impl fmt::Display for HighlightedString {
 /// a wrapper around colored::Color in order to implement serialization
 #[derive(Debug, PartialEq)]
 pub struct Color(pub Col);
+
+impl Color {
+  /// Parse a [`Color`] from a hexadecimal string.
+  ///
+  /// Supports two simple formats (uppercase / lowercase supported in either case):
+  ///
+  /// - `#rrggbb`. Example: `#34f1c8`.
+  /// - `#rgb`, which desugars to repeating each channel once. Example: `#3fc`.
+  pub fn from_hex(hex: impl AsRef<str>) -> Option<Color> {
+    let hex = hex.as_ref();
+    let bytes = hex.as_bytes();
+    let (mut r, mut g, mut b);
+
+    if hex.len() == 4 && bytes[0] == b'#' {
+      // triplet form (#rgb)
+      let mut h = u16::from_str_radix(&hex[1..], 16).ok()?;
+
+      b = (h & 0xf) as _;
+      b += b << 4;
+
+      h >>= 4;
+      g = (h & 0xf) as _;
+      g += g << 4;
+
+      h >>= 4;
+      r = (h & 0xf) as _;
+      r += r << 4;
+    } else if hex.len() == 7 && bytes[0] == b'#' {
+      // #rrggbb form
+      let mut h = u32::from_str_radix(&hex[1..], 16).ok()?;
+
+      b = (h & 0xff) as _;
+
+      h >>= 8;
+      g = (h & 0xff) as _;
+
+      h >>= 8;
+      r = (h & 0xff) as _;
+    } else {
+      return None;
+    }
+
+    Some(Color(Col::TrueColor { r, g, b }))
+  }
+}
 
 impl<'de> Deserialize<'de> for Color {
   fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
@@ -433,18 +473,8 @@ impl<'de> Deserialize<'de> for Color {
         // try to use from_str to get color; if this doesn't work we try to parse it as hex
         Col::from_str(value)
           .ok()
-          .or_else(|| {
-            if let Ok(c) = RGBColor::from_hex_code(value) {
-              Some(Col::TrueColor {
-                r: c.int_r(),
-                g: c.int_g(),
-                b: c.int_b(),
-              })
-            } else {
-              None
-            }
-          })
           .map(Color)
+          .or_else(|| Color::from_hex(value))
           .ok_or_else(|| {
             // in the case we were unable to parse either a color name or hexadecimal color, we emit a serde error
             E::invalid_value(de::Unexpected::Str(value), &EXPECTING)
@@ -500,18 +530,25 @@ mod tests {
 
   #[test]
   fn color_hex() {
-    let c = Color(Col::TrueColor { r: 255, g: 0, b: 0 });
-    assert_tokens(&c, &[Token::Str("#ff0000")]);
+    assert_eq!(
+      Color::from_hex("#123"),
+      Some(Color(Col::TrueColor {
+        r: 0x11,
+        g: 0x22,
+        b: 0x33
+      }))
+    );
 
-    // shorthands
-    assert_de_tokens(
-      &c,
-      &[
-        // heh, foo
-        Token::Str("f00"),
-      ],
-    )
+    assert_eq!(
+      Color::from_hex("#112234"),
+      Some(Color(Col::TrueColor {
+        r: 0x11,
+        g: 0x22,
+        b: 0x34
+      }))
+    );
   }
+
   #[test]
   fn color_colored_name() {
     let c = Color(Col::White);
