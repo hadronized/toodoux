@@ -43,6 +43,10 @@ This document describes the initial MVP of the project. It contains:
     * [Describing a task](#describing-a-task)
     * [History of a task](#history-of-a-task)
   * [Configuration](#configuration)
+    * [Colors and styles](#colors-and-styles)
+      * [List of color sections](#list-of-color-sections)
+      * [Style](#style)
+      * [Color](#color)
   * [What’s next](#whats-next)
     * [Fuzzy search](#fuzzy-search)
 * [Impacts](#impacts)
@@ -415,7 +419,7 @@ the main configuration.
 
 > We reserve the right to use other sections for further, more precise configuration.
 
-It contains the following keys:
+That section contains the following keys.
 
 - `tasks_file`: path to the file to use to hold tasks.
 - `todo_alias`: name to use when showing the `TODO` status.
@@ -424,6 +428,85 @@ It contains the following keys:
 - `active_project`: project name to use to filter. Can be set to `null` or removed if no project should be used.
 - `editor`: if `$EDITOR` is not set, this variable will be used to edit notes. If this variable is set while `$EDITOR`
   is set too, `$EDITOR` has predominance.
+
+### Colors and styles
+
+Colors can be configured by the use of several sections, in the form of:
+
+```toml
+[colors.<item>.<nested-item>]
+```
+
+#### List of color sections
+
+Many nested items might exist and the level of nesting depends on which properties you want to set colors for.
+Currently, you can change the colors of all these items:
+
+| Item                              | Section name                     |
+| ----                              | ---                              |
+| Description of a _todo_ item      | `[colors.description.todo]`      |
+| Description of an _ongoing_ item  | `[colors.description.ongoing]`   |
+| Description of a _done_ item      | `[colors.description.done]`      |
+| Description of a _cancelled_ item | `[colors.description.cancelled]` |
+| _Todo status_                     | `[colors.status.todo]`           |
+| _Ongoing_ status                  | `[colors.status.ongoing]`        |
+| _Done_ status                     | `[colors.status.done]`           |
+| _Cancelled_ status                | `[colors.status.cancelled]`      |
+| Low priority                      | `[colors.priority.low]`          |
+| Medium priority                   | `[colors.priority.medium]`       |
+| High priority                     | `[colors.priority.high]`         |
+| Critical priority                 | `[colors.priority.critical]`     |
+
+
+A color section can contain three key-value pairs:
+
+- `foreground`: foreground color to use.
+- `background`: background color to use.
+- `style`: a list of style attribute to set.
+
+#### Style
+
+A _style_ is a collection — list — of _style attributes_. A style attribute is a unique string representing how
+texts should be stylized.
+
+The exhaustive list of styles:
+
+- `"bold"`: make the text bold.
+- `"dimmed"`: dim the text.
+- `"underline"`: underline the text.
+- `"reversed"`: reverse the color of text (foreground color becomes background and vice versa).
+- `"italic"`: emphasis with italic.
+- `"blink"`: make the text blink. Note: use at your own caution, as not all terminals support that.
+- `"hidden"`: hide the text.
+- `"strikethrough"`: strike through style.
+
+#### Color
+
+A color is defined as a formatted string. For this current RFC and inherent implementation, we suggest to support these
+two formats:
+
+- Human readable version of colors for terminal colors. Those are:
+  - `"black"`.
+  - `"red"`.
+  - `"green"`.
+  - `"yellow"`.
+  - `"blue"`.
+  - `"magenta"`.
+  - `"purple"`.
+  - `"cyan"`.
+  - `"white"`.
+  - `"bright black"`.
+  - `"bright red"`.
+  - `"bright green"`.
+  - `"bright yellow"`.
+  - `"bright blue"`.
+  - `"bright magenta"`.
+  - `"bright cyan"`.
+  - `"bright white"`.
+- RGB colors parsed as hexadecimal strings, preceded by a hash (`#`). We support both uppercase and lowercase as well
+  as triplet shortcuts — i.e. `"#rrggbb"` can be rewritten as `"#rgb"`.
+
+The above example includes all possible styles.
 
 ## What’s next
 
