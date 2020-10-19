@@ -65,6 +65,7 @@ pub struct MainConfig {
 }
 
 impl MainConfig {
+  #[allow(dead_code)]
   pub fn new(
     tasks_file: impl Into<PathBuf>,
     todo_alias: impl Into<String>,
@@ -101,6 +102,7 @@ impl MainConfig {
 }
 
 impl Config {
+  #[allow(dead_code)]
   pub fn new(main: MainConfig, colors: ColorConfig) -> Self {
     Config { main, colors }
   }
