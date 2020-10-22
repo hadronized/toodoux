@@ -4,7 +4,7 @@ use chrono::{Duration, Utc};
 use colored::Colorize;
 use std::{cmp::Reverse, error::Error, fmt::Display, iter::once, path::PathBuf};
 use structopt::StructOpt;
-use unicode_width::UnicodeWidthStr as _;
+use unicode_width::UnicodeWidthStr;
 
 use crate::{
   config::{Config, HighlightedString},
@@ -224,7 +224,9 @@ struct DisplayOptions {
   /// Offset to use for the description column.
   description_offset: usize,
   /// Maximum columns to fit in the description column.
-  max_description_cols: usize,
+  ///
+  /// [`None`] implies that the dimension of the terminal don’t allow for descriptions.
+  max_description_cols: Option<usize>,
 }
 
 impl DisplayOptions {
@@ -263,7 +265,7 @@ impl DisplayOptions {
         let age_width = age_width.max(Self::guess_duration_width(&task.age()));
         let spent_width = spent_width.max(Self::guess_duration_width(&task.spent_time()));
         let status_width = status_width.max(Self::guess_task_status_width(&config, task.status()));
-        let description_width = description_width.max(task.name().len());
+        let description_width = description_width.max(task.name().width());
         let project_width = project_width.max(Self::guess_task_project_width(&task).unwrap_or(0));
         let has_spent_time = has_spent_time || task.spent_time() != Duration::zero();
         let has_priorities = has_priorities || task.priority().is_some();
@@ -284,21 +286,22 @@ impl DisplayOptions {
     );
 
     let mut opts = Self {
-      task_uid_width: task_uid_width.max(config.uid_col_name().len()),
-      age_width: age_width.max(config.age_col_name().len()),
-      spent_width: spent_width.max(config.spent_col_name().len()),
-      status_width: status_width.max(config.status_col_name().len()),
-      description_width: description_width.max(config.description_col_name().len()),
-      project_width: project_width.max(config.project_col_name().len()),
+      task_uid_width: task_uid_width.max(config.uid_col_name().width()),
+      age_width: age_width.max(config.age_col_name().width()),
+      spent_width: spent_width.max(config.spent_col_name().width()),
+      status_width: status_width.max(config.status_col_name().width()),
+      description_width: description_width.max(config.description_col_name().width()),
+      project_width: project_width.max(config.project_col_name().width()),
       has_spent_time,
       has_priorities,
       has_projects,
       description_offset: 0,
-      max_description_cols: 0,
+      max_description_cols: None,
     };
 
     opts.description_offset = opts.guess_description_col_offset(config);
-    opts.max_description_cols = term.dimensions().unwrap()[0] - opts.description_offset;
+    eprintln!("found descrption offset = {}", opts.description_offset);
+    opts.max_description_cols = term.dimensions().unwrap()[0].checked_sub(opts.description_offset);
 
     opts
   }
@@ -355,17 +358,17 @@ impl DisplayOptions {
   /// Guess the width required to represent the task status.
   fn guess_task_status_width(config: &Config, status: Status) -> usize {
     let width = match status {
-      Status::Ongoing => config.wip_alias().len(),
-      Status::Todo => config.todo_alias().len(),
-      Status::Done => config.done_alias().len(),
-      Status::Cancelled => config.cancelled_alias().len(),
+      Status::Ongoing => config.wip_alias().width(),
+      Status::Todo => config.todo_alias().width(),
+      Status::Done => config.done_alias().width(),
+      Status::Cancelled => config.cancelled_alias().width(),
     };
 
     width.max("Status".len())
   }
 
   fn guess_task_project_width(task: &Task) -> Option<usize> {
-    task.project().map(str::len)
+    task.project().map(UnicodeWidthStr::width)
   }
 
   /// Compute the column offset at which descriptions can start.
@@ -378,7 +381,7 @@ impl DisplayOptions {
 
     if config.display_empty_cols() {
       spent_width = self.spent_width + 1;
-      prio_width = config.prio_col_name().len() + 1; // FIXME
+      prio_width = config.prio_col_name().width() + 1;
       project_width = self.project_width + 1;
     } else {
       // compute spent time if any
@@ -390,7 +393,7 @@ impl DisplayOptions {
 
       // compute priority width if any
       if self.has_priorities {
-        prio_width = config.prio_col_name().len() + 1; // FIXME
+        prio_width = config.prio_col_name().width() + 1;
       } else {
         prio_width = 0;
       }
@@ -440,7 +443,7 @@ fn display_task_header(config: &Config, opts: &DisplayOptions) {
     print!(
       " {priority:<prio_width$}",
       priority = config.prio_col_name().underline(),
-      prio_width = config.prio_col_name().len(),
+      prio_width = config.prio_col_name().width(),
     );
   }
 
@@ -452,13 +455,15 @@ fn display_task_header(config: &Config, opts: &DisplayOptions) {
     );
   }
 
-  println!(
-    " {status:<status_width$} {description:<description_width$}",
-    status = config.status_col_name().underline(),
-    status_width = opts.status_width,
-    description = config.description_col_name().underline(),
-    description_width = opts.description_width.min(opts.max_description_cols),
-  );
+  if let Some(max_description_cols) = opts.max_description_cols {
+    println!(
+      " {status:<status_width$} {description:<description_width$}",
+      status = config.status_col_name().underline(),
+      status_width = opts.status_width,
+      description = config.description_col_name().underline(),
+      description_width = opts.description_width.min(max_description_cols),
+    );
+  }
 }
 
 /// Display a task to the user.
@@ -513,7 +518,7 @@ fn display_task_inline(config: &Config, uid: UID, task: &Task, opts: &DisplayOpt
     print!(
       " {priority:<prio_width$}",
       priority = friendly_priority(task, config),
-      prio_width = config.prio_col_name().len(),
+      prio_width = config.prio_col_name().width(),
     );
   }
 
@@ -535,48 +540,48 @@ fn display_task_inline(config: &Config, uid: UID, task: &Task, opts: &DisplayOpt
 }
 
 /// Display a description by respecting the allowed description column size.
+///
+/// The description is not displayed if no space is available on screen.
 fn display_description(config: &Config, opts: &DisplayOptions, status: Status, description: &str) {
-  let mut line_index = 0;
-  let mut offset = 0;
-  let mut line_buffer = String::new();
+  if let Some(max_description_cols) = opts.max_description_cols {
+    let mut line_index = 0;
+    let mut rel_offset = 0;
+    let mut line_buffer = String::new();
+    let description_width = opts.description_width.min(max_description_cols);
 
-  print!(" ");
-  for word in description.split_ascii_whitespace() {
-    let word_size = word.width(); // TODO: check what to do about CJK
-    let next_offset = offset + word_size + 1; // + 1 for space/ellipsis
+    print!(" ");
+    for word in description.split_ascii_whitespace() {
+      let word_size = word.width(); // TODO: check what to do about CJK
+      let next_offset = rel_offset + word_size + 1;
 
-    if next_offset >= opts.max_description_cols {
-      // we’ve passed the end of the line; break into another line
-      line_index += 1;
-      offset = 0;
+      if next_offset > max_description_cols {
+        // we’ve passed the end of the line; break into another line
+        line_index += 1;
+        rel_offset = 0;
 
-      if line_index >= config.max_description_lines() {
-        line_buffer.push('…');
-        break;
-      } else {
-        let hl_description = highlight_description_line(config, status, &line_buffer);
-        print!(
-          "{:<width$}",
-          hl_description,
-          width = opts.max_description_cols
-        );
+        if line_index >= config.max_description_lines() {
+          line_buffer.push('…');
+          break;
+        } else {
+          let hl_description = highlight_description_line(config, status, &line_buffer);
+          print!("{:<width$}", hl_description, width = description_width);
 
-        line_buffer.clear();
-        print!("{:<width$}", "", width = opts.description_offset);
+          line_buffer.clear();
+          print!("{:<width$}", "", width = opts.description_offset);
+        }
       }
+
+      if rel_offset > 0 {
+        line_buffer.push(' ');
+      }
+
+      line_buffer.push_str(word);
+      rel_offset = next_offset;
     }
 
-    offset += word_size + 1;
-    line_buffer.push_str(word);
-    line_buffer.push(' ');
+    let hl_description = highlight_description_line(config, status, &line_buffer);
+    println!("{:<width$}", hl_description, width = description_width);
   }
-
-  let hl_description = highlight_description_line(config, status, &line_buffer);
-  println!(
-    "{:<width$}",
-    hl_description,
-    width = opts.max_description_cols
-  );
 }
 
 /// Highlight a description line
@@ -734,7 +739,38 @@ mod unit_tests {
     assert_eq!(opts.description_offset, description_offset,);
     assert_eq!(
       opts.max_description_cols,
-      term.dimensions().unwrap()[0] - description_offset
+      Some(term.dimensions().unwrap()[0] - description_offset)
+    );
+  }
+
+  #[test]
+  fn display_options_should_yield_no_description_if_too_short() {
+    let main_config = MainConfig::new(
+      "N/A",
+      "TODO",
+      "WIP",
+      "DONE",
+      "CANCELLED",
+      "UID",
+      "Age",
+      "Spent",
+      "Prio",
+      "Project",
+      "Status",
+      "Desc",
+      false,
+      2,
+    );
+    let config = Config::new(main_config, ColorConfig::default());
+    let tasks = &[(UID::default(), &Task::new("Foo", vec![]))];
+    let term = DummyTerm::new([100, 1]);
+    let opts = DisplayOptions::new(&config, &term, tasks.iter().copied());
+
+    let description_offset = " UID ".len() + "Age ".len() + "Status ".len();
+    assert_eq!(opts.description_offset, description_offset,);
+    assert_eq!(
+      opts.max_description_cols,
+      Some(term.dimensions().unwrap()[0] - description_offset)
     );
   }
 }
