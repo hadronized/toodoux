@@ -300,7 +300,6 @@ impl DisplayOptions {
     };
 
     opts.description_offset = opts.guess_description_col_offset(config);
-    eprintln!("found descrption offset = {}", opts.description_offset);
     opts.max_description_cols = term.dimensions().unwrap()[0].checked_sub(opts.description_offset);
 
     opts
