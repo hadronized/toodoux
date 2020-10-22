@@ -67,20 +67,17 @@ impl TaskManager {
 pub struct Task {
   /// Name of the task.
   name: String,
-  /// Optional list of labels.
-  labels: Vec<String>,
   /// Event history.
   history: Vec<Event>,
 }
 
 impl Task {
   /// Create a new [`Task`] and populate automatically its history with creation date and status.
-  pub fn new(name: impl Into<String>, labels: impl Into<Vec<String>>) -> Self {
+  pub fn new(name: impl Into<String>) -> Self {
     let date = Utc::now();
 
     Task {
       name: name.into(),
-      labels: labels.into(),
       history: vec![
         Event::Created(date),
         Event::StatusChanged {

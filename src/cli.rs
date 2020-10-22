@@ -160,7 +160,7 @@ pub fn add_task(
   Metadata::validate(&metadata)?;
 
   let mut task_mgr = TaskManager::new_from_config(config)?;
-  let mut task = Task::new(name, Vec::new());
+  let mut task = Task::new(name);
 
   // apply the metadata
   task.apply_metadata(metadata);
@@ -730,7 +730,7 @@ mod unit_tests {
       2,
     );
     let config = Config::new(main_config, ColorConfig::default());
-    let tasks = &[(UID::default(), &Task::new("Foo", vec![]))];
+    let tasks = &[(UID::default(), &Task::new("Foo"))];
     let term = DummyTerm::new([100, 1]);
     let opts = DisplayOptions::new(&config, &term, tasks.iter().copied());
 
@@ -761,7 +761,7 @@ mod unit_tests {
       2,
     );
     let config = Config::new(main_config, ColorConfig::default());
-    let tasks = &[(UID::default(), &Task::new("Foo", vec![]))];
+    let tasks = &[(UID::default(), &Task::new("Foo"))];
     let term = DummyTerm::new([100, 1]);
     let opts = DisplayOptions::new(&config, &term, tasks.iter().copied());
 

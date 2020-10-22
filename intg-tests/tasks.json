@@ -3,7 +3,6 @@
   "tasks": {
     "3": {
       "name": "Bar",
-      "labels": [],
       "history": [
         {
           "Created": "2020-10-13T19:04:35.546321677Z"
@@ -42,7 +41,6 @@
     },
     "4": {
       "name": "Zoo",
-      "labels": [],
       "history": [
         {
           "Created": "2020-10-13T19:04:54.834792525Z"
@@ -69,7 +67,6 @@
     },
     "8": {
       "name": "We shouldn’t do this",
-      "labels": [],
       "history": [
         {
           "Created": "2020-10-15T12:06:32.845996823Z"
@@ -90,7 +87,6 @@
     },
     "1": {
       "name": "Show the recent updates",
-      "labels": [],
       "history": [
         {
           "Created": "2020-10-13T18:12:34.160928899Z"
@@ -105,7 +101,6 @@
     },
     "5": {
       "name": "Zoo high",
-      "labels": [],
       "history": [
         {
           "Created": "2020-10-13T19:05:04.062904024Z"
@@ -132,7 +127,6 @@
     },
     "2": {
       "name": "Foo",
-      "labels": [],
       "history": [
         {
           "Created": "2020-10-13T19:04:10.527938957Z"
@@ -147,7 +141,6 @@
     },
     "7": {
       "name": "This is done",
-      "labels": [],
       "history": [
         {
           "Created": "2020-10-15T12:06:20.564230601Z"
@@ -192,7 +185,6 @@
     },
     "0": {
       "name": "Work on a next iteration version of toodoux",
-      "labels": [],
       "history": [
         {
           "Created": "2020-10-13T18:12:07.366945740Z"
@@ -219,7 +211,6 @@
     },
     "6": {
       "name": "Do this right now!",
-      "labels": [],
       "history": [
         {
           "Created": "2020-10-13T19:05:13.148969605Z"
