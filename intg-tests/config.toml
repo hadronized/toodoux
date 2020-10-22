@@ -1,15 +1,63 @@
 [main]
-tasks_file            = './intg-tests'
-todo_alias            = 'TODO'
-wip_alias             = 'WIP'
-done_alias            = 'DONE'
-cancelled_alias       = 'CANCELLED'
-uid_col_name          = 'UID'
-age_col_name          = 'Age'
-spent_col_name        = 'Spent'
-prio_col_name         = 'Prio'
-project_col_name      = 'Project'
-status_col_name       = 'Status'
-description_col_name  = 'Description'
-display_empty_cols    = false
+tasks_file = './intg-tests'
+todo_alias = 'TODO'
+wip_alias = 'WIP'
+done_alias = 'DONE'
+cancelled_alias = 'CANCELLED'
+uid_col_name = 'UID'
+age_col_name = 'Age'
+spent_col_name = 'Spent'
+prio_col_name = 'Prio'
+project_col_name = 'Project'
+status_col_name = 'Status'
+description_col_name = 'Description'
+display_empty_cols = false
 max_description_lines = 2
+[colors.description.ongoing]
+foreground = 'black'
+background = 'bright green'
+
+[colors.description.todo]
+foreground = 'bright white'
+background = 'black'
+
+[colors.description.done]
+foreground = 'bright black'
+background = 'black'
+style = ['dimmed']
+
+[colors.description.cancelled]
+foreground = 'bright black'
+background = 'black'
+style = [
+    'dimmed',
+    'strikethrough',
+]
+[colors.status.ongoing]
+foreground = 'green'
+style = ['bold']
+
+[colors.status.todo]
+foreground = 'magenta'
+style = ['bold']
+
+[colors.status.done]
+foreground = 'bright black'
+style = ['dimmed']
+
+[colors.status.cancelled]
+foreground = 'bright red'
+style = ['dimmed']
+[colors.priority.low]
+foreground = 'bright black'
+style = ['dimmed']
+
+[colors.priority.medium]
+foreground = 'blue'
+
+[colors.priority.high]
+foreground = 'red'
+
+[colors.priority.critical]
+foreground = 'black'
+background = 'bright red'
