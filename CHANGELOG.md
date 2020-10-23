@@ -1,5 +1,14 @@
 # Changelog
 
+# 0.2.1
+
+> Oct 23th, 2020
+
+- Fix a panic when the terminal’s width was too short.
+- Fix a visual glitch related to cutting sentences when the final cut word ends up at the end of the terminal.
+- Add support for metadata filtering. You can now fuzzy filter tasks in the `ls` command by adding the regular metadata
+  (`+l`, `+m`, `+h`, `+c`, `#a-tag` or `@a-project`).
+
 # 0.2
 
 > Oct 19th, 2020
