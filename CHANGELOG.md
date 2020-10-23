@@ -1,5 +1,11 @@
 # Changelog
 
+# 0.2.3
+
+> Oct 24th, 2020
+
+- Fix configuration errors when colors are not present in the file.
+
 # 0.2.2
 
 > Oct 23th, 2020

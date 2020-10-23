@@ -15,6 +15,7 @@ use std::{
 };
 
 #[derive(Debug, Deserialize, Serialize, Default)]
+#[serde(default)]
 pub struct Config {
   pub main: MainConfig,
   pub colors: ColorConfig,
