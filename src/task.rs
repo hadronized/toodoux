@@ -142,9 +142,12 @@ impl Task {
   }
 
   /// Iterate over the notes, if any.
-  pub fn notes(&self) -> impl Iterator<Item = &str> {
+  pub fn notes(&self) -> impl Iterator<Item = (&DateTime<Utc>, &str)> {
     self.history.iter().filter_map(|event| match event {
-      Event::NoteAdded { ref note, .. } => Some(note.as_str()),
+      Event::NoteAdded {
+        ref event_date,
+        ref note,
+      } => Some((event_date, note.as_str())),
       _ => None,
     })
   }

@@ -13,6 +13,7 @@ status_col_name = 'Status'
 description_col_name = 'Description'
 display_empty_cols = false
 max_description_lines = 2
+
 [colors.description.ongoing]
 foreground = 'black'
 background = 'bright green'
@@ -33,6 +34,7 @@ style = [
     'dimmed',
     'strikethrough',
 ]
+
 [colors.status.ongoing]
 foreground = 'green'
 style = ['bold']
@@ -48,6 +50,7 @@ style = ['dimmed']
 [colors.status.cancelled]
 foreground = 'bright red'
 style = ['dimmed']
+
 [colors.priority.low]
 foreground = 'bright black'
 style = ['dimmed']

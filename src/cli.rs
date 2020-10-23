@@ -57,6 +57,10 @@ pub enum SubCommand {
     content: Vec<String>,
   },
 
+  /// Show the details of a task.
+  #[structopt(visible_aliases = &["s"])]
+  Show,
+
   /// Mark a task as todo.
   Todo,
 
@@ -226,6 +230,95 @@ pub fn edit_task(task: &mut Task, content: Vec<String>) -> Result<(), Box<dyn Er
   }
 
   Ok(())
+}
+
+/// Show a task.
+pub fn show_task(config: &Config, uid: UID, task: &Task) {
+  let header_hl = &config.colors.show_header;
+  let status = task.status();
+
+  println!(
+    " {}: {}",
+    header_hl.highlight(config.description_col_name()),
+    task.name().bold()
+  );
+  println!(" {}: {}", header_hl.highlight(config.uid_col_name()), uid);
+  println!(
+    " {}: {}",
+    header_hl.highlight(config.age_col_name()),
+    friendly_task_age(task)
+  );
+
+  let spent_time = task.spent_time();
+  if spent_time == Duration::zero() {
+    println!(
+      " {}: {}",
+      header_hl.highlight(config.spent_col_name()),
+      "not started yet".bright_black().italic()
+    );
+  } else {
+    println!(
+      " {}: {}",
+      header_hl.highlight(config.spent_col_name()),
+      friendly_spent_time(task.spent_time(), status)
+    );
+  }
+
+  if let Some(prio) = task.priority() {
+    println!(
+      " {}: {}",
+      header_hl.highlight(config.prio_col_name()),
+      friendly_priority(task, config)
+    );
+  }
+
+  if let Some(project) = task.project() {
+    println!(
+      " {}: {}",
+      header_hl.highlight(config.project_col_name()),
+      friendly_project(task)
+    );
+  }
+
+  let mut tags = task.tags();
+
+  if let Some(first_tag) = tags.next() {
+    let hash = "#".bright_black();
+
+    print!(" {}: ", header_hl.highlight("Tags"));
+    print!("{}{}", hash, first_tag.yellow());
+
+    for tag in tags {
+      print!(", {}{}", hash, tag.yellow());
+    }
+
+    println!();
+  }
+
+  println!(
+    " {}: {}",
+    header_hl.highlight(config.status_col_name()),
+    highlight_status(config, status)
+  );
+
+  println!();
+
+  // show the notes
+  for (nb, (date, note)) in task.notes().enumerate() {
+    println!(
+      "{}{}{}{}",
+      " Note #".bright_black().italic(),
+      (nb + 1).to_string().blue().italic(),
+      ", on ".bright_black().italic(),
+      date
+        .format("%a, %d %b %Y at %H:%M")
+        .to_string()
+        .italic()
+        .blue()
+    );
+    println!(" {}", note);
+    println!();
+  }
 }
 
 /// Display options to use when rendering in CLI.

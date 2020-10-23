@@ -3,7 +3,7 @@ use std::error::Error;
 use colored::Colorize;
 
 use crate::{
-  cli::{add_task, edit_task, list_tasks, SubCommand},
+  cli::{add_task, edit_task, list_tasks, show_task, SubCommand},
   config::Config,
   task::{Status, TaskManager, UID},
   term::Term,
@@ -23,7 +23,7 @@ pub fn run_subcmd(
 
     Some(subcmd) => {
       let mut task_mgr = TaskManager::new_from_config(&config)?;
-      let task = task_uid.and_then(|uid| task_mgr.get_mut(uid));
+      let task = task_uid.and_then(|uid| task_mgr.get_mut(uid).map(|task| (uid, task)));
 
       match subcmd {
         SubCommand::Add {
@@ -31,7 +31,7 @@ pub fn run_subcmd(
           done,
           content,
         } => {
-          if task_uid.is_none() {
+          if task.is_none() {
             add_task(&config, &term, start, done, content)?;
           } else {
             println!(
@@ -43,7 +43,7 @@ pub fn run_subcmd(
         }
 
         SubCommand::Edit { content } => {
-          if let Some(task) = task {
+          if let Some((_, task)) = task {
             edit_task(task, content)?;
             task_mgr.save(&config)?;
           } else {
@@ -51,8 +51,16 @@ pub fn run_subcmd(
           }
         }
 
+        SubCommand::Show => {
+          if let Some((uid, task)) = task {
+            show_task(&config, uid, task);
+          } else {
+            println!("{}", "missing or unknown task to show".red());
+          }
+        }
+
         SubCommand::Todo => {
-          if let Some(task) = task {
+          if let Some((_, task)) = task {
             task.change_status(Status::Todo);
             task_mgr.save(&config)?;
           } else {
@@ -61,7 +69,7 @@ pub fn run_subcmd(
         }
 
         SubCommand::Start => {
-          if let Some(task) = task_uid.and_then(|uid| task_mgr.get_mut(uid)) {
+          if let Some((_, task)) = task {
             task.change_status(Status::Ongoing);
             task_mgr.save(&config)?;
           } else {
@@ -70,7 +78,7 @@ pub fn run_subcmd(
         }
 
         SubCommand::Done => {
-          if let Some(task) = task_uid.and_then(|uid| task_mgr.get_mut(uid)) {
+          if let Some((_, task)) = task {
             task.change_status(Status::Done);
             task_mgr.save(&config)?;
           } else {
@@ -79,7 +87,7 @@ pub fn run_subcmd(
         }
 
         SubCommand::Cancel => {
-          if let Some(task) = task_uid.and_then(|uid| task_mgr.get_mut(uid)) {
+          if let Some((uid, task)) = task {
             task.change_status(Status::Cancelled);
             task_mgr.save(&config)?;
           } else {

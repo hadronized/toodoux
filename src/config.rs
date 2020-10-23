@@ -9,11 +9,12 @@ use serde::{
 use std::{
   error::Error,
   fmt, fs,
+  ops::Deref,
   path::{Path, PathBuf},
   str::FromStr,
 };
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Default)]
 pub struct Config {
   pub main: MainConfig,
   pub colors: ColorConfig,
@@ -62,6 +63,27 @@ pub struct MainConfig {
 
   /// Maximum number of warping lines of task description before breaking it (and adding the ellipsis character).
   max_description_lines: usize,
+}
+
+impl Default for MainConfig {
+  fn default() -> Self {
+    Self {
+      tasks_file: dirs::config_dir().unwrap().join("toodoux"),
+      todo_alias: "TODO".to_owned(),
+      wip_alias: "WIP".to_owned(),
+      done_alias: "DONE".to_owned(),
+      cancelled_alias: "CANCELLED".to_owned(),
+      uid_col_name: "UID".to_owned(),
+      age_col_name: "Age".to_owned(),
+      spent_col_name: "Spent".to_owned(),
+      prio_col_name: "Prio".to_owned(),
+      project_col_name: "Project".to_owned(),
+      status_col_name: "Status".to_owned(),
+      description_col_name: "Description".to_owned(),
+      display_empty_cols: false,
+      max_description_lines: 2,
+    }
+  }
 }
 
 impl MainConfig {
@@ -198,43 +220,18 @@ impl Config {
   }
 
   pub fn create(path: Option<&Path>) -> Option<Self> {
+    let default_config = Self::default();
     let tasks_file = path
       .map(|p| p.to_owned())
       .or(Self::get_config_path().ok())?;
-    let todo_alias = "TODO".to_owned();
-    let wip_alias = "WIP".to_owned();
-    let done_alias = "DONE".to_owned();
-    let cancelled_alias = "CANCELLED".to_owned();
-    let uid_col_name = "UID".to_owned();
-    let age_col_name = "Age".to_owned();
-    let spent_col_name = "Spent".to_owned();
-    let prio_col_name = "Prio".to_owned();
-    let project_col_name = "Project".to_owned();
-    let status_col_name = "Status".to_owned();
-    let description_col_name = "Description".to_owned();
-    let display_empty_cols = false;
-    let max_description_lines = 2;
 
     let main = MainConfig {
       tasks_file,
-      todo_alias,
-      wip_alias,
-      done_alias,
-      cancelled_alias,
-      uid_col_name,
-      age_col_name,
-      spent_col_name,
-      prio_col_name,
-      project_col_name,
-      status_col_name,
-      description_col_name,
-      display_empty_cols,
-      max_description_lines,
+      ..default_config.main
     };
-
-    let config = Config {
+    let config = Self {
       main,
-      colors: Default::default(),
+      ..default_config
     };
 
     log::trace!("creating new configuration:\n{:#?}", config);
@@ -283,10 +280,12 @@ impl StyleAttribute {
 }
 
 #[derive(Debug, Deserialize, Serialize, Default)]
+#[serde(default)]
 pub struct ColorConfig {
   pub description: TaskDescriptionColorConfig,
   pub status: TaskStatusColorConfig,
   pub priority: PriorityColorConfig,
+  pub show_header: ShowHeaderColorConfig,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -391,6 +390,27 @@ impl Default for PriorityColorConfig {
         style: vec![],
       },
     }
+  }
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ShowHeaderColorConfig(Highlight);
+
+impl Default for ShowHeaderColorConfig {
+  fn default() -> Self {
+    Self(Highlight {
+      foreground: Some(Color(Col::BrightBlack)),
+      background: None,
+      style: vec![],
+    })
+  }
+}
+
+impl Deref for ShowHeaderColorConfig {
+  type Target = Highlight;
+
+  fn deref(&self) -> &Self::Target {
+    &self.0
   }
 }
 

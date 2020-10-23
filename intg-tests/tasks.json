@@ -36,6 +36,18 @@
             "event_date": "2020-10-13T19:04:35.546326416Z",
             "priority": "High"
           }
+        },
+        {
+          "NoteAdded": {
+            "event_date": "2020-10-13T19:06:01Z",
+            "note": "This is the first note. This is a test. Be advised."
+          }
+        },
+        {
+          "NoteAdded": {
+            "event_date": "2020-10-13T19:10:50Z",
+            "note": "I’d like to discuss about my previous note. This is not a test. I repeat: this is not a test."
+          }
         }
       ]
     },
