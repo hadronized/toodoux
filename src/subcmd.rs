@@ -18,7 +18,7 @@ pub fn run_subcmd(
   match subcmd {
     // default subcommand
     None => {
-      default_list(&config, &term, true, true, false, false, false)?;
+      default_list(&config, &term, true, true, false, false, false, vec![])?;
     }
 
     Some(subcmd) => {
@@ -95,9 +95,19 @@ pub fn run_subcmd(
           done,
           cancelled,
           all,
+          metadata_filter,
           ..
         } => {
-          default_list(&config, &term, todo, start, cancelled, done, all)?;
+          default_list(
+            &config,
+            &term,
+            todo,
+            start,
+            cancelled,
+            done,
+            all,
+            metadata_filter,
+          )?;
         }
       }
     }
@@ -114,6 +124,7 @@ fn default_list(
   mut cancelled: bool,
   mut done: bool,
   all: bool,
+  metadata_filter: Vec<String>,
 ) -> Result<(), Box<dyn Error>> {
   // handle filtering logic
   if all {
@@ -127,5 +138,5 @@ fn default_list(
     start = true;
   }
 
-  list_tasks(config, term, todo, start, cancelled, done)
+  list_tasks(config, term, todo, start, cancelled, done, metadata_filter)
 }
