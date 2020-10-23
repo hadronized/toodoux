@@ -103,6 +103,9 @@ pub enum SubCommand {
     /// Show the content of each listed task, if any.
     #[structopt(long)]
     content: bool,
+
+    /// Metadata filter.
+    metadata_filter: Vec<String>,
   },
 }
 
@@ -114,17 +117,43 @@ pub fn list_tasks(
   start: bool,
   cancelled: bool,
   done: bool,
+  metadata_filter: Vec<String>,
 ) -> Result<(), Box<dyn Error>> {
+  // extract metadata if any
+  let (metadata, name) = Metadata::from_words(metadata_filter.iter().map(|s| s.as_str()));
+  Metadata::validate(&metadata)?;
+
+  if !metadata.is_empty() {
+    print!("{}", "[ ".bright_black());
+
+    print!("{}", metadata[0].filter_like());
+
+    for md in &metadata[1..] {
+      print!(", {}", md.filter_like());
+    }
+    println!("{}", " ]".bright_black());
+  }
+
+  if !name.is_empty() {
+    println!("{}", "name filtering is not yet supported… sorry :(".red());
+  }
+
   let task_mgr = TaskManager::new_from_config(config)?;
   let mut tasks: Vec<_> = task_mgr
     .tasks()
     .filter(|(_, task)| {
       // filter the task depending on what is passed as argument
-      match task.status() {
+      let status_filter = match task.status() {
         Status::Ongoing => start,
         Status::Todo => todo,
         Status::Done => done,
         Status::Cancelled => cancelled,
+      };
+
+      if metadata_filter.is_empty() {
+        status_filter
+      } else {
+        status_filter && task.check_metadata(metadata.iter())
       }
     })
     .collect();
@@ -650,7 +679,7 @@ fn friendly_spent_time(dur: Duration, status: Status) -> impl Display {
 
   match status {
     Status::Ongoing => output.blue(),
-    _ => output.bright_black().dimmed(),
+    _ => output.bright_black(),
   }
 }
 

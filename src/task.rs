@@ -218,6 +218,15 @@ impl Task {
     }
   }
 
+  /// Check all metadata against this I have no idea how to express the end of this sentence so good luck.
+  pub fn check_metadata<'a>(&self, metadata: impl IntoIterator<Item = &'a Metadata>) -> bool {
+    metadata.into_iter().all(|md| match md {
+      Metadata::Project(ref project) => self.project() == Some(project),
+      Metadata::Priority(priority) => self.priority() == Some(*priority),
+      Metadata::Tag(ref tag) => self.tags().find(|t| t == tag).is_some(),
+    })
+  }
+
   /// Get the current project.
   pub fn project(&self) -> Option<&str> {
     self

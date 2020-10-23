@@ -1,5 +1,6 @@
 //! Metadata available to users for filtering / creating tasks.
 
+use colored::Colorize as _;
 use serde::{Deserialize, Serialize};
 use std::{
   error::Error,
@@ -108,6 +109,15 @@ impl Metadata {
 
     (metadata, output.join(" "))
   }
+
+  /// Return a “filter-like” representation of this metadata.
+  pub fn filter_like(&self) -> impl Display {
+    match *self {
+      Metadata::Project(ref p) => format!("@{}", p).magenta(),
+      Metadata::Priority(ref p) => format!("+{:?}", p).yellow(),
+      Metadata::Tag(ref t) => format!("#{}", t).green(),
+    }
+  }
 }
 
 impl FromStr for Metadata {
@@ -124,10 +134,10 @@ impl FromStr for Metadata {
       b'+' => {
         if len == 2 {
           match s.as_bytes()[1] {
-            b'l' => Ok(Metadata::Priority(Priority::Low)),
-            b'm' => Ok(Metadata::Priority(Priority::Medium)),
-            b'h' => Ok(Metadata::Priority(Priority::High)),
-            b'c' => Ok(Metadata::Priority(Priority::Critical)),
+            b'l' => Ok(Metadata::priority(Priority::Low)),
+            b'm' => Ok(Metadata::priority(Priority::Medium)),
+            b'h' => Ok(Metadata::priority(Priority::High)),
+            b'c' => Ok(Metadata::priority(Priority::Critical)),
             _ => Err(MetadataParsingError::UnknownPriority),
           }
         } else {
