@@ -1,5 +1,11 @@
 # Changelog
 
+# 0.2.2
+
+> Oct 23th, 2020
+
+- Add the `show` / `s` command, enabling to show details about a task.
+
 # 0.2.1
 
 > Oct 23th, 2020
