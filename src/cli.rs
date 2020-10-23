@@ -124,9 +124,7 @@ pub fn list_tasks(
   Metadata::validate(&metadata)?;
 
   if !metadata.is_empty() {
-    print!("{}", "[ ".bright_black());
-
-    print!("{}", metadata[0].filter_like());
+    print!("{} {}", "[".bright_black(), metadata[0].filter_like());
 
     for md in &metadata[1..] {
       print!(", {}", md.filter_like());
