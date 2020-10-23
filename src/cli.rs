@@ -494,33 +494,8 @@ fn display_task_header(config: &Config, opts: &DisplayOptions) {
 
 /// Display a task to the user.
 fn display_task_inline(config: &Config, uid: UID, task: &Task, opts: &DisplayOptions) {
-  let status;
   let task_name = task.name();
-  let task_status = task.status();
-
-  match task_status {
-    Status::Todo => {
-      status = config.colors.status.todo.highlight(config.todo_alias());
-    }
-
-    Status::Ongoing => {
-      status = config.colors.status.ongoing.highlight(config.wip_alias());
-    }
-
-    Status::Done => {
-      status = config.colors.status.done.highlight(config.done_alias());
-    }
-
-    Status::Cancelled => {
-      status = config
-        .colors
-        .status
-        .cancelled
-        .highlight(config.cancelled_alias());
-    }
-  }
-
-  let spent_time = friendly_spent_time(task.spent_time(), task_status);
+  let status = task.status();
 
   print!(
     " {uid:<uid_width$} {age:<age_width$}",
@@ -535,7 +510,7 @@ fn display_task_inline(config: &Config, uid: UID, task: &Task, opts: &DisplayOpt
   if display_empty_cols || opts.has_spent_time {
     print!(
       " {spent:<spent_width$}",
-      spent = spent_time,
+      spent = friendly_spent_time(task.spent_time(), status),
       spent_width = opts.spent_width,
     );
   }
@@ -558,11 +533,11 @@ fn display_task_inline(config: &Config, uid: UID, task: &Task, opts: &DisplayOpt
 
   print!(
     " {status:<status_width$}",
-    status = status,
+    status = highlight_status(config, status),
     status_width = opts.status_width,
   );
 
-  display_description(config, opts, task_status, task_name);
+  display_description(config, opts, status, task_name);
 }
 
 /// Display a description by respecting the allowed description column size.
@@ -617,6 +592,20 @@ fn highlight_description_line(config: &Config, status: Status, line: &str) -> im
     Status::Ongoing => config.colors.description.ongoing.highlight(line),
     Status::Done => config.colors.description.done.highlight(line),
     Status::Cancelled => config.colors.description.cancelled.highlight(line),
+  }
+}
+
+/// Highlight a status.
+fn highlight_status(config: &Config, status: Status) -> impl Display {
+  match status {
+    Status::Todo => config.colors.status.todo.highlight(config.todo_alias()),
+    Status::Ongoing => config.colors.status.ongoing.highlight(config.wip_alias()),
+    Status::Done => config.colors.status.done.highlight(config.done_alias()),
+    Status::Cancelled => config
+      .colors
+      .status
+      .cancelled
+      .highlight(config.cancelled_alias()),
   }
 }
 
