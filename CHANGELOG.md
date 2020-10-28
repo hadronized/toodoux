@@ -1,5 +1,11 @@
 # Changelog
 
+# 0.2.4
+
+> Oct 28th, 2020
+
+- Fix alignments for task descriptions while listing them.
+
 # 0.2.3
 
 > Oct 24th, 2020

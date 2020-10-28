@@ -638,39 +638,55 @@ fn display_task_inline(config: &Config, uid: UID, task: &Task, opts: &DisplayOpt
 /// The description is not displayed if no space is available on screen.
 fn display_description(config: &Config, opts: &DisplayOptions, status: Status, description: &str) {
   if let Some(max_description_cols) = opts.max_description_cols {
-    let mut line_index = 0;
-    let mut rel_offset = 0;
-    let mut line_buffer = String::new();
+    let mut line_index = 0; // line number we are currently at; cannot exceed config.max_description_lines()
+    let mut rel_offset = 0; // unicode offset in the current line; cannot exceed the description width
+    let mut line_buffer = String::new(); // buffer for the current line
     let description_width = opts.description_width.min(max_description_cols);
 
+    // The algorithm is a bit convoluted, so here’s a bit of explanation. It’s an iterative algorithm that splits the
+    // description into an iterator over words. Each word has a unicode width, which is used to determine whether
+    // appending it to the buffer line will make it longer than the description width. The tricky part comes in with
+    // the fact that we want to display a ellipsis character if the next word is too long (…) and that we would end up
+    // on more line than required.
+    //
+    // Before adding a new word, we check that its size + 1 added to the current unicode offset is still smaller than
+    // the acceptable description width. If it is not the case, it means that adding this word would be out of sight,
+    // so it has to be put on another line. However, if we cannot add another line, we simply add “…” to the current
+    // line buffer and we are done. Otherwise, we just go to the next line, reset the offset and output the word. If we
+    // haven’t passed the end of the line, we simply output the word.
     print!(" ");
     for word in description.split_ascii_whitespace() {
-      let word_size = word.width(); // TODO: check what to do about CJK
-      let next_offset = rel_offset + word_size + 1;
+      let word_size = word.width() + 1; // TODO: check what to do about CJK
 
-      if next_offset > max_description_cols {
+      if rel_offset + word_size > description_width {
         // we’ve passed the end of the line; break into another line
         line_index += 1;
-        rel_offset = 0;
 
         if line_index >= config.max_description_lines() {
+          // we reserve the last column for …
+          // we cannot create another line; add the ellipsis (…) character and stop
           line_buffer.push('…');
           break;
-        } else {
-          let hl_description = highlight_description_line(config, status, &line_buffer);
-          print!("{:<width$}", hl_description, width = description_width);
-
-          line_buffer.clear();
-          print!("{:<width$}", "", width = opts.description_offset);
         }
-      }
 
-      if rel_offset > 0 {
-        line_buffer.push(' ');
-      }
+        // we can create another line; display the line buffer first
+        let hl_description = highlight_description_line(config, status, &line_buffer);
+        println!("{:<width$}", hl_description, width = description_width);
+        print!("{:<width$}", "", width = opts.description_offset);
 
-      line_buffer.push_str(word);
-      rel_offset = next_offset;
+        // reset the line buffer and the relative offset
+        line_buffer.clear();
+        line_buffer.push_str(word);
+        rel_offset = word_size;
+      } else {
+        // we still have room; simply add the word and go on
+        if rel_offset > 0 {
+          line_buffer.push(' ');
+        }
+
+        line_buffer.push_str(word);
+        rel_offset += word_size;
+      }
     }
 
     let hl_description = highlight_description_line(config, status, &line_buffer);

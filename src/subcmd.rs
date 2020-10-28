@@ -87,7 +87,7 @@ pub fn run_subcmd(
         }
 
         SubCommand::Cancel => {
-          if let Some((uid, task)) = task {
+          if let Some((_, task)) = task {
             task.change_status(Status::Cancelled);
             task_mgr.save(&config)?;
           } else {
