@@ -7,7 +7,7 @@ use structopt::StructOpt;
 use unicode_width::UnicodeWidthStr;
 
 use crate::{
-  config::{Config, HighlightedString},
+  config::Config,
   metadata::{Metadata, Priority},
   task::{Status, Task, TaskManager, UID},
   term::Term,
@@ -268,7 +268,7 @@ pub fn show_task(config: &Config, uid: UID, task: &Task) {
     println!(
       " {}: {}",
       header_hl.highlight(config.prio_col_name()),
-      friendly_priority(task, config)
+      friendly_priority(prio, config)
     );
   }
 
@@ -276,7 +276,7 @@ pub fn show_task(config: &Config, uid: UID, task: &Task) {
     println!(
       " {}: {}",
       header_hl.highlight(config.project_col_name()),
-      friendly_project(task)
+      friendly_project(project)
     );
   }
 
@@ -609,17 +609,25 @@ fn display_task_inline(config: &Config, uid: UID, task: &Task, opts: &DisplayOpt
   }
 
   if display_empty_cols || opts.has_priorities {
-    print!(
-      " {priority:<prio_width$}",
-      priority = friendly_priority(task, config),
-      prio_width = config.prio_col_name().width(),
-    );
+    if let Some(prio) = task.priority() {
+      print!(
+        " {priority:<prio_width$}",
+        priority = friendly_priority(prio, config),
+        prio_width = config.prio_col_name().width(),
+      );
+    } else {
+      print!(
+        " {prio:<prio_width$}",
+        prio = "",
+        prio_width = config.prio_col_name().width(),
+      );
+    }
   }
 
   if display_empty_cols || opts.has_projects {
     print!(
       " {project:<project_width$}",
-      project = friendly_project(task),
+      project = friendly_project(task.project().unwrap_or("")),
       project_width = opts.project_width,
     );
   }
@@ -742,25 +750,17 @@ pub fn friendly_duration(dur: Duration) -> String {
   }
 }
 
-fn friendly_priority(task: &Task, config: &Config) -> impl Display {
-  if let Some(prio) = task.priority() {
-    match prio {
-      Priority::Low => config.colors.priority.low.highlight("LOW"),
-      Priority::Medium => config.colors.priority.medium.highlight("MED"),
-      Priority::High => config.colors.priority.high.highlight("HIGH"),
-      Priority::Critical => config.colors.priority.critical.highlight("CRIT"),
-    }
-  } else {
-    HighlightedString::regular("")
+fn friendly_priority(prio: Priority, config: &Config) -> impl Display {
+  match prio {
+    Priority::Low => config.colors.priority.low.highlight("LOW"),
+    Priority::Medium => config.colors.priority.medium.highlight("MED"),
+    Priority::High => config.colors.priority.high.highlight("HIGH"),
+    Priority::Critical => config.colors.priority.critical.highlight("CRIT"),
   }
 }
 
-fn friendly_project(task: &Task) -> impl Display {
-  if let Some(project) = task.project() {
-    project.italic()
-  } else {
-    "".into()
-  }
+fn friendly_project(project: impl AsRef<str>) -> impl Display {
+  project.as_ref().italic()
 }
 
 /// String representation of a spent-time.
