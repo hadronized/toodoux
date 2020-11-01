@@ -2,7 +2,9 @@
 
 use chrono::{Duration, Utc};
 use colored::Colorize;
-use std::{cmp::Reverse, error::Error, fmt::Display, iter::once, path::PathBuf};
+use std::{
+  cmp::Reverse, collections::HashSet, error::Error, fmt::Display, iter::once, path::PathBuf,
+};
 use structopt::StructOpt;
 use unicode_width::UnicodeWidthStr;
 
@@ -136,9 +138,11 @@ pub fn list_tasks(
     println!("{}", " ]".bright_black());
   }
 
-  if !name.is_empty() {
-    println!("{}", "name filtering is not yet supported… sorry :(".red());
-  }
+  let name_filter = if name.is_empty() {
+    HashSet::<&str>::with_capacity(0)
+  } else {
+    name.split_ascii_whitespace().collect()
+  };
 
   let task_mgr = TaskManager::new_from_config(config)?;
   let mut tasks: Vec<_> = task_mgr
@@ -156,6 +160,23 @@ pub fn list_tasks(
         status_filter
       } else {
         status_filter && task.check_metadata(metadata.iter())
+      }
+    })
+    .filter(|(_, task)| {
+      if !name_filter.is_empty() {
+        let mut name_filter = name_filter.clone();
+
+        for word in task.name().split_ascii_whitespace() {
+          let word_found = name_filter.remove(word);
+
+          if word_found && name_filter.is_empty() {
+            break;
+          }
+        }
+
+        name_filter.is_empty()
+      } else {
+        true
       }
     })
     .collect();
