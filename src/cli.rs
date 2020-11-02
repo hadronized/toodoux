@@ -170,11 +170,11 @@ pub fn list_tasks(
           let word_found = name_filter.remove(word);
 
           if word_found && name_filter.is_empty() {
-            break;
+            return true;
           }
         }
 
-        name_filter.is_empty()
+        false
       } else {
         true
       }
