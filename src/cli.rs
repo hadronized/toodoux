@@ -472,12 +472,16 @@ struct DisplayOptions {
   description_width: usize,
   /// Width of the task project column.
   project_width: usize,
+  /// Width of the task tags column.
+  tags_width: usize,
   /// Whether any task has spent time.
   has_spent_time: bool,
   /// Whether we have a priority in at least one task.
   has_priorities: bool,
   /// Whether we have a project in at least one task.
   has_projects: bool,
+  /// Whether we have a tag in at least one task.
+  has_tags: bool,
   /// Offset to use for the description column.
   description_offset: usize,
   /// Maximum columns to fit in the description column.
@@ -508,9 +512,10 @@ impl DisplayOptions {
       has_spent_time,
       has_priorities,
       has_projects,
+      has_tags,
       notes_nb_width,
     ) = tasks.into_iter().fold(
-      (0, 0, 0, 0, 0, 0, false, false, false, 0),
+      (0, 0, 0, 0, 0, 0, false, false, false, false, 0),
       |(
         task_uid_width,
         age_width,
@@ -521,6 +526,7 @@ impl DisplayOptions {
         has_spent_time,
         has_priorities,
         has_projects,
+        has_tags,
         notes_nb_width,
       ),
        (uid, task)| {
@@ -533,6 +539,7 @@ impl DisplayOptions {
         let has_spent_time = has_spent_time || task.spent_time() != Duration::zero();
         let has_priorities = has_priorities || task.priority().is_some();
         let has_projects = has_projects || task.project().is_some();
+        let has_tags = has_tags || task.tags().next().is_some();
         let notes_nb_width = notes_nb_width.max(Self::guess_notes_width(
           task.notes().iter().map(|note| note.content.as_str()),
         ));
@@ -547,6 +554,7 @@ impl DisplayOptions {
           has_spent_time,
           has_priorities,
           has_projects,
+          has_tags,
           notes_nb_width,
         )
       },
@@ -559,9 +567,11 @@ impl DisplayOptions {
       status_width: status_width.max(config.status_col_name().width()),
       description_width: description_width.max(config.description_col_name().width()),
       project_width: project_width.max(config.project_col_name().width()),
+      tags_width: project_width.max(config.tags_col_name().width()),
       has_spent_time,
       has_priorities,
       has_projects,
+      has_tags,
       description_offset: 0,
       max_description_cols: None,
       notes_nb_width,
@@ -750,6 +760,14 @@ fn display_task_header(config: &Config, opts: &DisplayOptions) {
       " {project:<project_width$}",
       project = config.project_col_name().underline(),
       project_width = opts.project_width,
+    );
+  }
+
+  if display_empty_cols || opts.has_tags {
+    print!(
+      " {tags:<tags_width$}",
+      tags = config.tags_col_name().underline(),
+      tags_width = opts.tags_width,
     );
   }
 
