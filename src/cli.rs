@@ -2,14 +2,13 @@
 
 use chrono::{Duration, Utc};
 use colored::Colorize;
-use std::{
-  cmp::Reverse, collections::HashSet, error::Error, fmt::Display, iter::once, path::PathBuf,
-};
+use std::{cmp::Reverse, error::Error, fmt::Display, iter::once, path::PathBuf};
 use structopt::StructOpt;
 use unicode_width::UnicodeWidthStr;
 
 use crate::{
   config::Config,
+  filter::NameFilter,
   metadata::{Metadata, Priority},
   task::{Status, Task, TaskManager, UID},
   term::Term,
@@ -110,6 +109,10 @@ pub enum SubCommand {
     #[structopt(long)]
     content: bool,
 
+    /// Apply filters ignoring case.
+    #[structopt(short = "C", long)]
+    case_insensitive: bool,
+
     /// Metadata filter.
     metadata_filter: Vec<String>,
   },
@@ -123,6 +126,7 @@ pub fn list_tasks(
   start: bool,
   cancelled: bool,
   done: bool,
+  case_insensitive: bool,
   metadata_filter: Vec<String>,
 ) -> Result<(), Box<dyn Error>> {
   // extract metadata if any
@@ -138,11 +142,7 @@ pub fn list_tasks(
     println!("{}", " ]".bright_black());
   }
 
-  let name_filter = if name.is_empty() {
-    HashSet::<&str>::with_capacity(0)
-  } else {
-    name.split_ascii_whitespace().collect()
-  };
+  let name_filter = NameFilter::new(name.split_ascii_whitespace(), case_insensitive);
 
   let task_mgr = TaskManager::new_from_config(config)?;
   let mut tasks: Vec<_> = task_mgr
