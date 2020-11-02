@@ -1,5 +1,11 @@
 # Changelog
 
+# 0.2.5
+
+> Nov 2nd, 2020
+
+- Replace the `m` suffix for month durations with `mth`, which is less confusing.
+
 # 0.2.4
 
 > Oct 28th, 2020
