@@ -469,8 +469,8 @@ impl DisplayOptions {
       // weeks, encoded with "Nw"
       Self::guess_number_width(dur.num_weeks() as _) + "w".len()
     } else {
-      // months, encoded with "Nm"
-      Self::guess_number_width(dur.num_weeks() as usize / 4) + "m".len()
+      // months, encoded with "Nmth"
+      Self::guess_number_width(dur.num_weeks() as usize / 4) + "mth".len()
     }
   }
 
@@ -746,7 +746,7 @@ pub fn friendly_duration(dur: Duration) -> String {
     // less than four weeks
     format!("{}w", dur.num_weeks())
   } else {
-    format!("{}m", dur.num_weeks() / 4)
+    format!("{}mth", dur.num_weeks() / 4)
   }
 }
 
