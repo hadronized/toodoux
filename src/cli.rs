@@ -159,7 +159,7 @@ pub fn list_tasks(
       if metadata_filter.is_empty() {
         status_filter
       } else {
-        status_filter && task.check_metadata(metadata.iter())
+        status_filter && task.check_metadata(metadata.iter(), case_insensitive)
       }
     })
     .filter(|(_, task)| {

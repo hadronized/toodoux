@@ -159,5 +159,14 @@ fn default_list(
     start = true;
   }
 
-  list_tasks(config, term, todo, start, cancelled, done, case_insensitive, metadata_filter)
+  list_tasks(
+    config,
+    term,
+    todo,
+    start,
+    cancelled,
+    done,
+    case_insensitive,
+    metadata_filter,
+  )
 }
