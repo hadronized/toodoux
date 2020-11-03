@@ -4,7 +4,7 @@ use chrono::{DateTime, Duration, Utc};
 use colored::Colorize;
 use std::{cmp::Reverse, error::Error, fmt::Display, iter::once, path::PathBuf};
 use structopt::StructOpt;
-use unicode_width::UnicodeWidthStr;
+use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 
 use crate::{
   config::Config,
@@ -665,12 +665,14 @@ impl DisplayOptions {
     let spent_width;
     let prio_width;
     let project_width;
+    let tags_width;
     let notes_nb_width;
 
     if config.display_empty_cols() {
       spent_width = self.spent_width + 1;
       prio_width = config.prio_col_name().width() + 1;
       project_width = self.project_width + 1;
+      tags_width = self.tags_width + 1;
       notes_nb_width = self.notes_nb_width + 1;
     } else {
       // compute spent time if any
@@ -694,6 +696,13 @@ impl DisplayOptions {
         project_width = 0;
       }
 
+      // compute tags width if any
+      if self.has_tags {
+        tags_width = self.tags_width + 1; // FIXME
+      } else {
+        tags_width = 0;
+      }
+
       // compute notes number width if any
       if self.notes_nb_width != 0 {
         notes_nb_width = config.notes_nb_col_name().width() + 1;
@@ -710,6 +719,7 @@ impl DisplayOptions {
       + spent_width
       + prio_width
       + project_width
+      + tags_width
       + notes_nb_width
       + self.status_width
       + 1 // to end up on the first column in the description
@@ -838,6 +848,10 @@ fn display_task_inline(config: &Config, uid: UID, task: &Task, opts: &DisplayOpt
     );
   }
 
+  if display_empty_cols || opts.has_tags {
+    display_tags(task, opts);
+  }
+
   let notes_nb_width = opts.notes_nb_width;
   let notes_nb = task.notes().len();
   if notes_nb_width != 0 {
@@ -855,6 +869,43 @@ fn display_task_inline(config: &Config, uid: UID, task: &Task, opts: &DisplayOpt
   );
 
   display_description(config, opts, status, task_name);
+}
+
+/// Display the tags by respecting the allowed tags column size.
+fn display_tags(task: &Task, opts: &DisplayOptions) {
+  let mut tag_text = String::new();
+  let ellipses_width = '…'.width().unwrap();
+  // Size for the column from the options minus the ellipses when we do not have enough space
+  let mut size_budget = opts.tags_width.saturating_sub(ellipses_width);
+  let mut tags = task.tags().peekable();
+  while let (Some(tag), is_last_tag) = (tags.next(), tags.peek().is_none()) {
+    let width = if is_last_tag {
+      // For the last tag the ellipses can't appear if the tag has enough space
+      tag.width().saturating_sub(ellipses_width)
+    } else {
+      // Not the last tag we need to consider the separator
+      tag.width() + 2
+    };
+
+    // Do we have enough space for the tag
+    if width <= size_budget {
+      size_budget -= width;
+      tag_text += tag;
+
+      if !is_last_tag {
+        tag_text += ", ";
+      }
+    } else {
+      tag_text.push('…');
+      break;
+    }
+  }
+
+  print!(
+    " {tags:<tags_width$}",
+    tags = tag_text,
+    tags_width = opts.tags_width,
+  );
 }
 
 /// Display a description by respecting the allowed description column size.
