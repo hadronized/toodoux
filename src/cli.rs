@@ -2,9 +2,10 @@
 
 use chrono::{DateTime, Duration, Utc};
 use colored::Colorize;
+use itertools::Itertools;
 use std::{cmp::Reverse, error::Error, fmt::Display, iter::once, path::PathBuf};
 use structopt::StructOpt;
-use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
+use unicode_width::UnicodeWidthStr;
 
 use crate::{
   config::Config,
@@ -13,7 +14,6 @@ use crate::{
   task::{Event, Status, Task, TaskManager, UID},
   term::Term,
 };
-use itertools::Itertools;
 
 #[derive(Debug, StructOpt)]
 #[structopt(
@@ -509,13 +509,14 @@ impl DisplayOptions {
       status_width,
       description_width,
       project_width,
+      tags_width,
       has_spent_time,
       has_priorities,
       has_projects,
       has_tags,
       notes_nb_width,
     ) = tasks.into_iter().fold(
-      (0, 0, 0, 0, 0, 0, false, false, false, false, 0),
+      (0, 0, 0, 0, 0, 0, 0, false, false, false, false, 0),
       |(
         task_uid_width,
         age_width,
@@ -523,6 +524,7 @@ impl DisplayOptions {
         status_width,
         description_width,
         project_width,
+        tags_width,
         has_spent_time,
         has_priorities,
         has_projects,
@@ -536,6 +538,7 @@ impl DisplayOptions {
         let status_width = status_width.max(Self::guess_task_status_width(&config, task.status()));
         let description_width = description_width.max(task.name().width());
         let project_width = project_width.max(Self::guess_task_project_width(&task).unwrap_or(0));
+        let tags_width = tags_width.max(Self::guess_tags_width(&task));
         let has_spent_time = has_spent_time || task.spent_time() != Duration::zero();
         let has_priorities = has_priorities || task.priority().is_some();
         let has_projects = has_projects || task.project().is_some();
@@ -551,6 +554,7 @@ impl DisplayOptions {
           status_width,
           description_width,
           project_width,
+          tags_width,
           has_spent_time,
           has_priorities,
           has_projects,
@@ -567,7 +571,7 @@ impl DisplayOptions {
       status_width: status_width.max(config.status_col_name().width()),
       description_width: description_width.max(config.description_col_name().width()),
       project_width: project_width.max(config.project_col_name().width()),
-      tags_width: project_width.max(config.tags_col_name().width()),
+      tags_width: tags_width.max(config.tags_col_name().width()),
       has_spent_time,
       has_priorities,
       has_projects,
@@ -656,6 +660,15 @@ impl DisplayOptions {
 
   fn guess_task_project_width(task: &Task) -> Option<usize> {
     task.project().map(UnicodeWidthStr::width)
+  }
+
+  /// Guess the width required to represent the task tags.
+  fn guess_tags_width(task: &Task) -> usize {
+    task
+      .tags()
+      .intersperse(", ")
+      .map(UnicodeWidthStr::width)
+      .sum()
   }
 
   /// Compute the column offset at which descriptions can start.
@@ -873,37 +886,9 @@ fn display_task_inline(config: &Config, uid: UID, task: &Task, opts: &DisplayOpt
 
 /// Display the tags by respecting the allowed tags column size.
 fn display_tags(task: &Task, opts: &DisplayOptions) {
-  let mut tag_text = String::new();
-  let ellipses_width = '…'.width().unwrap();
-  // Size for the column from the options minus the ellipses when we do not have enough space
-  let mut size_budget = opts.tags_width.saturating_sub(ellipses_width);
-  let mut tags = task.tags().peekable();
-  while let (Some(tag), is_last_tag) = (tags.next(), tags.peek().is_none()) {
-    let width = if is_last_tag {
-      // For the last tag the ellipses can't appear if the tag has enough space
-      tag.width().saturating_sub(ellipses_width)
-    } else {
-      // Not the last tag we need to consider the separator
-      tag.width() + 2
-    };
-
-    // Do we have enough space for the tag
-    if width <= size_budget {
-      size_budget -= width;
-      tag_text += tag;
-
-      if !is_last_tag {
-        tag_text += ", ";
-      }
-    } else {
-      tag_text.push('…');
-      break;
-    }
-  }
-
   print!(
     " {tags:<tags_width$}",
-    tags = tag_text,
+    tags = task.tags().intersperse(", ").collect::<String>(),
     tags_width = opts.tags_width,
   );
 }
