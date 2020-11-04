@@ -10,7 +10,7 @@ use crate::{
   config::Config,
   filter::TaskDescriptionFilter,
   metadata::{Metadata, Priority},
-  task::{Status, Task, TaskManager, UID},
+  task::{Event, Status, Task, TaskManager, UID},
   term::Term,
 };
 use itertools::Itertools;
@@ -126,6 +126,9 @@ pub enum SubCommand {
     #[structopt(subcommand)]
     subcmd: NoteCommand,
   },
+
+  /// Show the edit history of a task.
+  History,
 }
 
 #[derive(Debug, StructOpt)]
@@ -385,6 +388,73 @@ pub fn show_task(config: &Config, uid: UID, task: &Task) {
 
     println!("{}", note.content.trim());
     println!();
+  }
+}
+
+pub fn show_task_history(config: &Config, uid: UID, task: &Task) {
+  for event in task.history() {
+    // Extract event date from all variants
+    match event {
+      Event::Created(event_date)
+      | Event::StatusChanged { event_date, .. }
+      | Event::NoteAdded { event_date, .. }
+      | Event::NoteReplaced { event_date, .. }
+      | Event::SetProject { event_date, .. }
+      | Event::SetPriority { event_date, .. }
+      | Event::AddTag { event_date, .. } => {
+        print!("{}: ", friendly_date_time(event_date));
+      }
+    }
+
+    match event {
+      Event::Created(_) => {
+        println!("{} {}", "Task created with uid".bright_black(), uid);
+      }
+
+      Event::StatusChanged { status, .. } => {
+        println!(
+          "{} {}",
+          "Status changed to".bright_black(),
+          highlight_status(config, *status)
+        );
+      }
+
+      Event::NoteAdded { content, .. } => {
+        println!("{} {}", "Note added".bright_black(), content);
+      }
+
+      Event::NoteReplaced {
+        content, note_uid, ..
+      } => {
+        println!(
+          "{} {} {} {}",
+          "Note".bright_black(),
+          note_uid.to_string().blue(),
+          "updated".bright_black(),
+          content
+        );
+      }
+
+      Event::SetProject { project, .. } => {
+        println!(
+          "{} {}",
+          "Project set to".bright_black(),
+          friendly_project(project)
+        );
+      }
+
+      Event::SetPriority { priority, .. } => {
+        println!(
+          "{} {}",
+          "Priority set to".bright_black(),
+          friendly_priority(*priority, config)
+        );
+      }
+
+      Event::AddTag { tag, .. } => {
+        println!("{}{}", "Tag added #".bright_black(), tag.yellow());
+      }
+    }
   }
 }
 
