@@ -13,7 +13,6 @@ use crate::{
   task::{Status, Task, TaskManager, UID},
   term::Term,
 };
-use itertools::Itertools;
 
 #[derive(Debug, StructOpt)]
 #[structopt(
@@ -135,28 +134,15 @@ pub fn list_tasks(
   Metadata::validate(&metadata)?;
 
   if !metadata.is_empty() {
-    print!(
-      "{} {} {}",
-      "[".bright_black(),
-      metadata.iter().map(Metadata::filter_like).format(", "),
-      "]".bright_black()
-    );
+    print!("{} {}", "[".bright_black(), metadata[0].filter_like());
+
+    for md in &metadata[1..] {
+      print!(", {}", md.filter_like());
+    }
+    println!("{}", " ]".bright_black());
   }
 
   let name_filter = NameFilter::new(name.split_ascii_whitespace(), case_insensitive);
-
-  if !name_filter.is_empty() {
-    println!(
-      "{}{} {}: {} {}",
-      if !metadata.is_empty() { " " } else { "" },
-      "[".bright_black(),
-      "contains".italic(),
-      name_filter.iter().format(", "),
-      "]".bright_black()
-    );
-  } else {
-    println!();
-  }
 
   let task_mgr = TaskManager::new_from_config(config)?;
   let mut tasks: Vec<_> = task_mgr
