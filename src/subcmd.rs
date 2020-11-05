@@ -18,7 +18,17 @@ pub fn run_subcmd(
   match subcmd {
     // default subcommand
     None => {
-      default_list(&config, &term, true, true, false, false, false, vec![])?;
+      default_list(
+        &config,
+        &term,
+        true,
+        true,
+        false,
+        false,
+        false,
+        false,
+        vec![],
+      )?;
     }
 
     Some(subcmd) => {
@@ -103,6 +113,7 @@ pub fn run_subcmd(
           done,
           cancelled,
           all,
+          case_insensitive,
           metadata_filter,
           ..
         } => {
@@ -114,6 +125,7 @@ pub fn run_subcmd(
             cancelled,
             done,
             all,
+            case_insensitive,
             metadata_filter,
           )?;
         }
@@ -132,6 +144,7 @@ fn default_list(
   mut cancelled: bool,
   mut done: bool,
   all: bool,
+  case_insensitive: bool,
   metadata_filter: Vec<String>,
 ) -> Result<(), Box<dyn Error>> {
   // handle filtering logic
@@ -146,5 +159,14 @@ fn default_list(
     start = true;
   }
 
-  list_tasks(config, term, todo, start, cancelled, done, metadata_filter)
+  list_tasks(
+    config,
+    term,
+    todo,
+    start,
+    cancelled,
+    done,
+    case_insensitive,
+    metadata_filter,
+  )
 }

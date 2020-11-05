@@ -5,6 +5,7 @@ use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 use serde_json as json;
 use std::{collections::HashMap, error::Error, fmt, fs, str::FromStr};
+use unicase::UniCase;
 
 /// Create, edit, remove and list tasks.
 #[derive(Debug, Deserialize, Serialize)]
@@ -222,12 +223,26 @@ impl Task {
   }
 
   /// Check all metadata against this I have no idea how to express the end of this sentence so good luck.
-  pub fn check_metadata<'a>(&self, metadata: impl IntoIterator<Item = &'a Metadata>) -> bool {
-    metadata.into_iter().all(|md| match md {
-      Metadata::Project(ref project) => self.project() == Some(project),
-      Metadata::Priority(priority) => self.priority() == Some(*priority),
-      Metadata::Tag(ref tag) => self.tags().find(|t| t == tag).is_some(),
-    })
+  pub fn check_metadata<'a>(
+    &self,
+    metadata: impl IntoIterator<Item = &'a Metadata>,
+    case_insensitive: bool,
+  ) -> bool {
+    if case_insensitive {
+      let own_project = self.project().map(UniCase::new);
+      let own_tags = self.tags().map(UniCase::new).collect::<Vec<_>>();
+      metadata.into_iter().all(|md| match md {
+        Metadata::Project(ref project) => own_project == Some(UniCase::new(project)),
+        Metadata::Priority(priority) => self.priority() == Some(*priority),
+        Metadata::Tag(ref tag) => own_tags.contains(&UniCase::new(tag)),
+      })
+    } else {
+      metadata.into_iter().all(|md| match md {
+        Metadata::Project(ref project) => self.project() == Some(project),
+        Metadata::Priority(priority) => self.priority() == Some(*priority),
+        Metadata::Tag(ref tag) => self.tags().any(|t| t == tag),
+      })
+    }
   }
 
   /// Get the current project.
