@@ -8,7 +8,7 @@ use unicode_width::UnicodeWidthStr;
 
 use crate::{
   config::Config,
-  filter::NameFilter,
+  filter::TaskDescriptionFilter,
   metadata::{Metadata, Priority},
   task::{Status, Task, TaskManager, UID},
   term::Term,
@@ -143,7 +143,7 @@ pub fn list_tasks(
     );
   }
 
-  let name_filter = NameFilter::new(name.split_ascii_whitespace(), case_insensitive);
+  let name_filter = TaskDescriptionFilter::new(name.split_ascii_whitespace(), case_insensitive);
 
   if !name_filter.is_empty() {
     println!(
@@ -151,7 +151,7 @@ pub fn list_tasks(
       if !metadata.is_empty() { " " } else { "" },
       "[".bright_black(),
       "contains".italic(),
-      name_filter.iter().format(", "),
+      name_filter.terms().format(", "),
       "]".bright_black()
     );
   } else {
