@@ -224,7 +224,7 @@ impl Config {
     let default_config = Self::default();
     let tasks_file = path
       .map(|p| p.to_owned())
-      .or(Self::get_config_path().ok())?;
+      .or_else(|| Self::get_config_path().ok())?;
 
     let main = MainConfig {
       tasks_file,

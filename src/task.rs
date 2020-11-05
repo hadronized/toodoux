@@ -118,7 +118,7 @@ impl Task {
 
   /// Get the age of the [`Task`]; i.e. the duration since its creation date.
   pub fn age(&self) -> Duration {
-    Utc::now().signed_duration_since(self.creation_date().copied().unwrap_or_else(|| Utc::now()))
+    Utc::now().signed_duration_since(self.creation_date().copied().unwrap_or_else(Utc::now))
   }
 
   /// Change the name of the [`Task`].
@@ -164,7 +164,7 @@ impl Task {
             Event::StatusChanged { event_date, status } => match (status, last_wip) {
               // We go from any status to WIP status; return the spent time untouched and set the new “last_wip” with the
               // time at which the status change occurred
-              (Status::Ongoing, _) => (spent, Some(event_date.clone())),
+              (Status::Ongoing, _) => (spent, Some(*event_date)),
               // We go to anything but WIP while the previous status was WIP; accumulate.
               (_, Some(last_wip)) => (spent + (event_date.signed_duration_since(last_wip)), None),
               // We go between inactive status, ignore
@@ -270,7 +270,7 @@ impl Task {
   }
 
   /// Get the current tags of a task.
-  pub fn tags<'a>(&'a self) -> impl Iterator<Item = &'a str> {
+  pub fn tags(&self) -> impl Iterator<Item = &str> {
     self.history.iter().filter_map(|event| match event {
       Event::AddTag { ref tag, .. } => Some(tag.as_str()),
       _ => None,

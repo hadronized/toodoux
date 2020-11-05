@@ -146,7 +146,7 @@ fn initiate_with_config(
       };
 
       if must_create_config_file {
-        let config = Config::create(path).ok_or_else(|| "cannot create config file")?;
+        let config = Config::create(path).ok_or("cannot create config file")?;
         config.save()?;
 
         run_subcmd(config, term, subcmd, task_uid)
