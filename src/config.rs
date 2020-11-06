@@ -460,17 +460,6 @@ impl Highlight {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct HighlightedString(ColoredString);
 
-impl HighlightedString {
-  fn new(colored: ColoredString) -> Self {
-    HighlightedString(colored)
-  }
-
-  /// Wrap a regular string that is not highlighted.
-  pub fn regular(s: impl AsRef<str>) -> Self {
-    Self::new(s.as_ref().into())
-  }
-}
-
 impl fmt::Display for HighlightedString {
   fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
     self.0.fmt(f)
@@ -635,7 +624,7 @@ mod tests {
   fn apply_color_options() {
     // with color
     {
-      let expected = HighlightedString::new("test".on_black().white().bold());
+      let expected = HighlightedString("test".on_black().white().bold());
       let opts = Highlight {
         background: Some(Color(Col::Black)),
         foreground: Some(Color(Col::White)),
@@ -646,7 +635,7 @@ mod tests {
 
     // only styles
     {
-      let expected = HighlightedString::new("test".italic().bold());
+      let expected = HighlightedString("test".italic().bold());
       let opts = Highlight {
         background: None,
         foreground: None,
