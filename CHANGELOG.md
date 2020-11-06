@@ -1,5 +1,16 @@
 # Changelog
 
+# 0.2.6
+
+> Nov 6th, 2020
+
+- Task listing now accepts description filtering. It works the same way tasks are created: meta data can be found at the
+  beginning and/or the end of the content: what’s in the middle is the description part. It is comprised of _search_
+  terms. By default, these are sorted uniquely and are case-insensitive. It is possible to change the case behavior
+  with the `-C` switch. Right now, it is not possible to enforce term order, nor cardinality (i.e. duplicated terms
+  resolve to a single one, and terms are lexicographically sorted).
+
+
 # 0.2.5
 
 > Nov 2nd, 2020
