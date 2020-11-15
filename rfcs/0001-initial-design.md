@@ -40,6 +40,9 @@ This document describes the initial MVP of the project. It contains:
     * [Modifying the priority, project or tags of a task](#modifying-the-priority-project-or-tags-of-a-task)
     * [Modifying both the name and priority, project or tags of a task](#modifying-both-the-name-and-priority-project-or-tags-of-a-task)
     * [Adding or editing notes](#adding-or-editing-notes)
+      * [Adding notes to a task](#adding-notes-to-a-task)
+      * [Listing a task’s notes](#listing-a-tasks-notes)
+      * [Editing a task’s notes](#editing-a-tasks-notes)
     * [Describing a task](#describing-a-task)
     * [History of a task](#history-of-a-task)
   * [Configuration](#configuration)
@@ -103,8 +106,9 @@ the project it belongs to, its due date, priority, etc. The complete list:
 - _Status_: the status of the task.
 - _Priority_: four priorities are supported and help sorting the tasks.
 - _Tags_: free and user-defined tags that can used to filter and sort tasks more easily. A task can have several tags.
-- _Notes_: an optional text users can use to add notes to a task; for instance while working on a task, a user can put
-  some notes about the resolution of a problem, what they tried, what worked, etc. Notes are formatted in Markdown.
+- _Notes_: an optional set of texts users can use to add notes to a task; for instance while working on a task, a user
+  can put some notes about the resolution of a problem, what they tried, what worked, etc. Notes are formatted in
+  Markdown.
 - _Event history_: a set of ordered events that have happened to the task. It gathers all the other metadata and pins
   them to a date to provide a proper historical view of what happened to a project. Even changing the content of a
   task is an event.
@@ -171,7 +175,7 @@ A task can have only one priority, but it’s possible to change it whenever wan
 
 ### Filtering
 
-Filtering allows to prevent _some_ notes from being displayed in listing. Filtering operates on several fields:
+Filtering allows to prevent _some_ tasks from being displayed in listing. Filtering operates on several fields:
 
 - The name of the task.
 - Its priority.
@@ -182,7 +186,9 @@ The syntax used to filter is described in the [user interface section](#user-int
 
 ### Notes
 
-Tasks can be added notes, which are Markdown entries associated with a timestamp.
+Tasks can be added notes, which are Markdown entries associated with a timestamp. A task is always added notes one by
+one — i.e. there is no rich text editing where several notes can be edited all at once. Task edition is performed by
+opening an interactive editor instead of lying the note on the command line.
 
 ### History
 
@@ -359,31 +365,59 @@ td 34 e +h #late Finish my homework
 
 ### Adding or editing notes
 
-Tasks, by default, are a collection of metadata (project, tags, priorities and name). There is, however, another
+Tasks, by default, are a collection of metadata (project, tags, priorities, name, etc.). There is, however, another
 property that can be set by the user: notes.
 
 Adding notes to a task allow to describe / detail what has been going on since trying to resolve it, for instance. That
 kind of information is logged in the history, and each entry is logged as Markdown.
 
-Notes are added with the `note` verb.
+Notes are available as a set of subcommands under `note` (or `n`) verb.
 
 ```sh
 td <task_uid> note
+td <task_uid> n
 ```
 
-It is also possible to edit the already existing notes. This is done with the `--edit` or `-e` switch:
+#### Adding notes to a task
+
+It is possible o add new notes with the `add` (or `a`) verb:
 
 ```sh
-td <task_uid> note -edit
-td <task_uid> note -e
+td <task_uid> note add
+td <task_uid> note a
 ```
 
-All those commands – whether you add or edit — will open our `$EDITOR` or, if not set, will look into the configuration
-to spawn your editor so that you can add / edit notes. There is no format / syntax when adding notes: it’s just plain
-Markdown. Have fun!
+This will open an interactive editor, prompting you for Markdown representing the note. Once this file is saved and the
+editor exited, the note is automatically added to the history of the task.
 
-However, when editing notes, you will be editing all the notes at once. You are advised not to edit the metadata present
-in the document, or **toodoux** will simply refuse the update.
+#### Listing a task’s notes
+
+Notes can be consulted for a given task with the `list` (or `ls`) verb:
+
+```sh
+td <task_uid> note list
+td <task_uid> note ls
+```
+
+The output provides information about the note entry number, its date and its content. The note entry number is
+important as it will allow the user to edit the note later if they want to.
+
+#### Editing a task’s notes
+
+It is also possible to edit the already existing notes. This is done with the `edit` (or `ed` / `e`) verb:
+
+```sh
+td <task_uid> note <note_entry_number> edit
+td <task_uid> note <note_entry_number> ed
+td <task_uid> note <note_entry_number> e
+```
+
+This command will open an interactive editor with the content of the note already pasted in the file. You can then
+modify the note as you see fit. Save and close your editor to make the modifications applied.
+
+All those commands – whether you add or edit — will open our `$EDITOR` or, if not set, will look into the configuration
+to spawn your editor so that you can add / edit notes. There is no format / syntax validation when adding notes: it’s
+just plain Markdown. Have fun!
 
 ### Describing a task
 
