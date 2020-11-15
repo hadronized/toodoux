@@ -13,6 +13,7 @@ status_col_name = 'Status'
 description_col_name = 'Description'
 display_empty_cols = false
 max_description_lines = 2
+notes_nb_col_name = "Notes"
 
 [colors.description.ongoing]
 foreground = 'black'

@@ -22,6 +22,7 @@ pub struct Config {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
+#[serde(default)]
 pub struct MainConfig {
   /// Path to the folder containing all the tasks.
   tasks_file: PathBuf,
@@ -64,6 +65,9 @@ pub struct MainConfig {
 
   /// Maximum number of warping lines of task description before breaking it (and adding the ellipsis character).
   max_description_lines: usize,
+
+  /// "Number of notes” column name."
+  notes_nb_col_name: String,
 }
 
 impl Default for MainConfig {
@@ -83,6 +87,7 @@ impl Default for MainConfig {
       description_col_name: "Description".to_owned(),
       display_empty_cols: false,
       max_description_lines: 2,
+      notes_nb_col_name: "Notes".to_owned(),
     }
   }
 }
@@ -104,6 +109,7 @@ impl MainConfig {
     description_col_name: impl Into<String>,
     display_empty_cols: bool,
     max_description_lines: usize,
+    notes_nb_col_name: String,
   ) -> Self {
     Self {
       tasks_file: tasks_file.into(),
@@ -120,6 +126,7 @@ impl MainConfig {
       description_col_name: description_col_name.into(),
       display_empty_cols,
       max_description_lines,
+      notes_nb_col_name,
     }
   }
 }
@@ -213,6 +220,10 @@ impl Config {
 
   pub fn max_description_lines(&self) -> usize {
     self.main.max_description_lines
+  }
+
+  pub fn notes_nb_col_name(&self) -> &str {
+    &self.main.notes_nb_col_name
   }
 
   pub fn get() -> Result<Option<Self>, Box<dyn Error>> {
