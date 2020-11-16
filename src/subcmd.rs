@@ -9,6 +9,7 @@ use crate::{
 use colored::Colorize;
 use std::error::Error;
 
+// TODO: break this function into small parts.
 pub fn run_subcmd(
   config: Config,
   term: impl Term,
@@ -131,7 +132,7 @@ pub fn run_subcmd(
         }
 
         SubCommand::Note { note_uid, subcmd } => {
-          if let Some((task_uid, mut task)) = task {
+          if let Some((task_uid, task)) = task {
             match subcmd {
               NoteCommand::Add => {
                 // open an interactive editor and create a new note
@@ -140,9 +141,26 @@ pub fn run_subcmd(
                 task_mgr.save(&config)?;
               }
 
-              NoteCommand::Edit => todo!(),
+              NoteCommand::Edit => {
+                if let Some(note_uid) = note_uid {
+                  // get the note so that we can put it in the temporary file
+                  let notes = task.notes();
+                  let prenote = notes
+                    .get(usize::from(note_uid))
+                    .map(|note| note.content.as_str())
+                    .unwrap_or_default();
 
-              NoteCommand::List => todo!(),
+                  // open an interactive editor and replace the previous note
+                  let note_content = interactively_edit(&config, "NEW_NOTE.md", prenote)?;
+                  task.replace_note(note_uid, note_content)?;
+                  task_mgr.save(&config)?;
+                } else {
+                  println!(
+                    "{}",
+                    format!("cannot edit task {}’s note: no note UID provided", task_uid).red()
+                  );
+                }
+              }
             }
           } else {
             println!(

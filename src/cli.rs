@@ -1,6 +1,6 @@
 //! Command line interface.
 
-use chrono::{Duration, Utc};
+use chrono::{DateTime, Duration, Utc};
 use colored::Colorize;
 use std::{cmp::Reverse, error::Error, fmt::Display, iter::once, path::PathBuf};
 use structopt::StructOpt;
@@ -139,10 +139,10 @@ pub enum NoteCommand {
   /// Edit a note.
   ///
   /// You will be prompted to edit the node within an editor.
+  #[structopt(visible_aliases = &["ed", "e"])]
   Edit,
-
-  /// List all notes.
-  List,
+  // /// List all notes.
+  // List,
 }
 
 /// List tasks.
@@ -365,19 +365,25 @@ pub fn show_task(config: &Config, uid: UID, task: &Task) {
   println!();
 
   // show the notes
-  for (nb, (date, note)) in task.notes().enumerate() {
-    println!(
+  for (nb, note) in task.notes().into_iter().enumerate() {
+    print!(
       "{}{}{}{}",
       " Note #".bright_black().italic(),
       (nb + 1).to_string().blue().italic(),
       ", on ".bright_black().italic(),
-      date
-        .format("%a, %d %b %Y at %H:%M")
-        .to_string()
-        .italic()
-        .blue()
+      friendly_date_time(&note.creation_date)
     );
-    println!(" {}", note);
+
+    if note.last_modification_date != note.creation_date {
+      print!(
+        "{}{}",
+        ", edited on ".bright_black().italic(),
+        friendly_date_time(&note.last_modification_date)
+      );
+    }
+    println!();
+
+    println!("{}", note.content.trim());
     println!();
   }
 }
@@ -457,8 +463,9 @@ impl DisplayOptions {
         let has_spent_time = has_spent_time || task.spent_time() != Duration::zero();
         let has_priorities = has_priorities || task.priority().is_some();
         let has_projects = has_projects || task.project().is_some();
-        let notes_nb_width =
-          notes_nb_width.max(Self::guess_notes_width(task.notes().map(|(_, note)| note)));
+        let notes_nb_width = notes_nb_width.max(Self::guess_notes_width(
+          task.notes().iter().map(|note| note.content.as_str()),
+        ));
 
         (
           task_uid_width,
@@ -734,7 +741,7 @@ fn display_task_inline(config: &Config, uid: UID, task: &Task, opts: &DisplayOpt
   }
 
   let notes_nb_width = opts.notes_nb_width;
-  let notes_nb = task.notes().count();
+  let notes_nb = task.notes().len();
   if notes_nb_width != 0 {
     print!(
       " {notes_nb:<notes_nb_width$}",
@@ -897,6 +904,15 @@ fn friendly_notes_nb(nb: usize) -> impl Display {
   } else {
     "".normal()
   }
+}
+
+/// String representation of a date.
+fn friendly_date_time(date_time: &DateTime<Utc>) -> impl Display {
+  date_time
+    .format("%a, %d %b %Y at %H:%M")
+    .to_string()
+    .italic()
+    .blue()
 }
 
 #[cfg(test)]

@@ -4,7 +4,7 @@
 //! configuration.
 
 use crate::config::Config;
-use std::{env, error, fmt, fs, io, path::Path, process, process::Stdio, string::FromUtf8Error};
+use std::{env, error, fmt, fs, io, path::Path, process, string::FromUtf8Error};
 
 /// Errors that can happen while interactively editing files.
 #[derive(Debug)]
@@ -83,7 +83,7 @@ pub fn interactively_edit(
     return Err(InteractiveEditingError::MissingInteractiveEditor);
   }
 
-  let output = process::Command::new(editor)
+  let _ = process::Command::new(editor)
     .arg(&file_path)
     .spawn()
     .map_err(InteractiveEditingError::InteractiveEditorError)?
