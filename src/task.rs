@@ -4,7 +4,12 @@ use crate::{config::Config, metadata::Metadata, metadata::Priority};
 use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 use serde_json as json;
-use std::{collections::HashMap, error::Error, fmt, fs, str::FromStr};
+use std::{
+  collections::HashMap,
+  error::{self, Error},
+  fmt, fs,
+  str::FromStr,
+};
 use unicase::UniCase;
 
 /// Create, edit, remove and list tasks.
@@ -135,22 +140,82 @@ impl Task {
   }
 
   /// Add a new note to the [`Task`].
-  pub fn add_note(&mut self, note: impl Into<String>) {
+  pub fn add_note(&mut self, content: impl Into<String>) {
     self.history.push(Event::NoteAdded {
       event_date: Utc::now(),
-      note: note.into(),
+      content: content.into(),
     });
   }
 
+  /// Replace the content of a note for a given [`Task`].
+  pub fn replace_note(
+    &mut self,
+    note_uid: UID,
+    content: impl Into<String>,
+  ) -> Result<(), NoteError> {
+    // ensure the note exists first
+    let mut count = 0;
+    let id: u32 = note_uid.into();
+    let previous_note = self.history.iter().find(|event| match event {
+      Event::NoteAdded { .. } => {
+        if id == count {
+          true
+        } else {
+          count += 1;
+          false
+        }
+      }
+
+      _ => false,
+    });
+
+    if previous_note.is_none() {
+      return Err(NoteError::UnknownNote(note_uid));
+    }
+
+    self.history.push(Event::NoteReplaced {
+      event_date: Utc::now(),
+      note_uid,
+      content: content.into(),
+    });
+
+    Ok(())
+  }
+
   /// Iterate over the notes, if any.
-  pub fn notes(&self) -> impl Iterator<Item = (&DateTime<Utc>, &str)> {
-    self.history.iter().filter_map(|event| match event {
-      Event::NoteAdded {
-        ref event_date,
-        ref note,
-      } => Some((event_date, note.as_str())),
-      _ => None,
-    })
+  pub fn notes(&self) -> Vec<Note> {
+    let mut notes = Vec::new();
+
+    for event in &self.history {
+      match event {
+        Event::NoteAdded {
+          event_date,
+          content,
+        } => {
+          let note = Note {
+            creation_date: *event_date,
+            last_modification_date: *event_date,
+            content: content.clone(),
+          };
+          notes.push(note);
+        }
+
+        Event::NoteReplaced {
+          event_date,
+          note_uid,
+          content,
+        } => {
+          if let Some(note) = notes.get_mut(usize::from(*note_uid)) {
+            note.last_modification_date = *event_date;
+            note.content = content.clone();
+          }
+        }
+
+        _ => (),
+      }
+    }
+
+    notes
   }
 
   /// Compute the time spent on this task.
@@ -278,7 +343,7 @@ impl Task {
   }
 }
 
-/// Unique task identifier.
+/// Unique identifier.
 #[derive(Clone, Copy, Debug, Deserialize, Hash, Eq, Ord, PartialEq, PartialOrd, Serialize)]
 pub struct UID(u32);
 
@@ -291,6 +356,12 @@ impl UID {
 impl From<UID> for u32 {
   fn from(uid: UID) -> Self {
     uid.0
+  }
+}
+
+impl From<UID> for usize {
+  fn from(uid: UID) -> Self {
+    uid.0 as _
   }
 }
 
@@ -353,7 +424,14 @@ pub enum Event {
   /// Event generated when a note is added to a task.
   NoteAdded {
     event_date: DateTime<Utc>,
-    note: String,
+    content: String,
+  },
+
+  /// Event generated when a note is replaced in a task.
+  NoteReplaced {
+    event_date: DateTime<Utc>,
+    note_uid: UID,
+    content: String,
   },
 
   /// Event generated when a project is set on a task.
@@ -373,4 +451,29 @@ pub enum Event {
     event_date: DateTime<Utc>,
     tag: String,
   },
+}
+
+/// Error that can happen while processing notes.
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub enum NoteError {
+  /// Note doesn’t exists for given task.
+  UnknownNote(UID),
+}
+
+impl fmt::Display for NoteError {
+  fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+    match *self {
+      NoteError::UnknownNote(uid) => write!(f, "note {} doesn’t exist", uid),
+    }
+  }
+}
+
+impl error::Error for NoteError {}
+
+/// A note.
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct Note {
+  pub creation_date: DateTime<Utc>,
+  pub last_modification_date: DateTime<Utc>,
+  pub content: String,
 }

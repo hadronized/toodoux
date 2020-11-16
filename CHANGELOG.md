@@ -1,5 +1,13 @@
 # Changelog
 
+# 3.6
+
+> Nov 16th, 2020
+
+- Add note support (addition, deletion). It’s a breaking change as notes were already supported in secret (in the
+  serialized form), even though the interface was not exposed. Nothing should break if you didn’t try to do sneaky
+  things.
+
 # 0.2.6
 
 > Nov 6th, 2020

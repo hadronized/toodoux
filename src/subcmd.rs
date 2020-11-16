@@ -1,14 +1,15 @@
-use std::error::Error;
-
-use colored::Colorize;
-
 use crate::{
+  cli::NoteCommand,
   cli::{add_task, edit_task, list_tasks, show_task, SubCommand},
   config::Config,
+  interactive_editor::interactively_edit,
   task::{Status, TaskManager, UID},
   term::Term,
 };
+use colored::Colorize;
+use std::error::Error;
 
+// TODO: break this function into small parts.
 pub fn run_subcmd(
   config: Config,
   term: impl Term,
@@ -128,6 +129,45 @@ pub fn run_subcmd(
             case_insensitive,
             metadata_filter,
           )?;
+        }
+
+        SubCommand::Note { note_uid, subcmd } => {
+          if let Some((task_uid, task)) = task {
+            match subcmd {
+              NoteCommand::Add => {
+                // open an interactive editor and create a new note
+                let note_content = interactively_edit(&config, "NEW_NOTE.md", "")?;
+                task.add_note(note_content);
+                task_mgr.save(&config)?;
+              }
+
+              NoteCommand::Edit => {
+                if let Some(note_uid) = note_uid {
+                  // get the note so that we can put it in the temporary file
+                  let notes = task.notes();
+                  let prenote = notes
+                    .get(usize::from(note_uid))
+                    .map(|note| note.content.as_str())
+                    .unwrap_or_default();
+
+                  // open an interactive editor and replace the previous note
+                  let note_content = interactively_edit(&config, "NEW_NOTE.md", prenote)?;
+                  task.replace_note(note_uid, note_content)?;
+                  task_mgr.save(&config)?;
+                } else {
+                  println!(
+                    "{}",
+                    format!("cannot edit task {}’s note: no note UID provided", task_uid).red()
+                  );
+                }
+              }
+            }
+          } else {
+            println!(
+              "{}",
+              "missing or unknown task to add, edit or list notes about".red()
+            );
+          }
         }
       }
     }

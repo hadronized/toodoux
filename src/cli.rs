@@ -1,6 +1,6 @@
 //! Command line interface.
 
-use chrono::{Duration, Utc};
+use chrono::{DateTime, Duration, Utc};
 use colored::Colorize;
 use std::{cmp::Reverse, error::Error, fmt::Display, iter::once, path::PathBuf};
 use structopt::StructOpt;
@@ -117,6 +117,32 @@ pub enum SubCommand {
     /// Metadata filter.
     metadata_filter: Vec<String>,
   },
+
+  /// List, add and edit notes.
+  Note {
+    /// UID of a note to operate on.
+    note_uid: Option<UID>,
+
+    #[structopt(subcommand)]
+    subcmd: NoteCommand,
+  },
+}
+
+#[derive(Debug, StructOpt)]
+pub enum NoteCommand {
+  /// Add a new note.
+  ///
+  /// You will be prompted to write a note within an editor.
+  #[structopt(visible_aliases = &["a"])]
+  Add,
+
+  /// Edit a note.
+  ///
+  /// You will be prompted to edit the node within an editor.
+  #[structopt(visible_aliases = &["ed", "e"])]
+  Edit,
+  // /// List all notes.
+  // List,
 }
 
 /// List tasks.
@@ -339,19 +365,25 @@ pub fn show_task(config: &Config, uid: UID, task: &Task) {
   println!();
 
   // show the notes
-  for (nb, (date, note)) in task.notes().enumerate() {
-    println!(
+  for (nb, note) in task.notes().into_iter().enumerate() {
+    print!(
       "{}{}{}{}",
       " Note #".bright_black().italic(),
       (nb + 1).to_string().blue().italic(),
       ", on ".bright_black().italic(),
-      date
-        .format("%a, %d %b %Y at %H:%M")
-        .to_string()
-        .italic()
-        .blue()
+      friendly_date_time(&note.creation_date)
     );
-    println!(" {}", note);
+
+    if note.last_modification_date != note.creation_date {
+      print!(
+        "{}{}",
+        ", edited on ".bright_black().italic(),
+        friendly_date_time(&note.last_modification_date)
+      );
+    }
+    println!();
+
+    println!("{}", note.content.trim());
     println!();
   }
 }
@@ -382,6 +414,10 @@ struct DisplayOptions {
   ///
   /// [`None`] implies that the dimension of the terminal don’t allow for descriptions.
   max_description_cols: Option<usize>,
+  /// With of the number of notes column.
+  ///
+  /// `0` indicates no data.
+  notes_nb_width: usize,
 }
 
 impl DisplayOptions {
@@ -402,8 +438,9 @@ impl DisplayOptions {
       has_spent_time,
       has_priorities,
       has_projects,
+      notes_nb_width,
     ) = tasks.into_iter().fold(
-      (0, 0, 0, 0, 0, 0, false, false, false),
+      (0, 0, 0, 0, 0, 0, false, false, false, 0),
       |(
         task_uid_width,
         age_width,
@@ -414,6 +451,7 @@ impl DisplayOptions {
         has_spent_time,
         has_priorities,
         has_projects,
+        notes_nb_width,
       ),
        (uid, task)| {
         let task_uid_width = task_uid_width.max(Self::guess_task_uid_width(uid));
@@ -425,6 +463,9 @@ impl DisplayOptions {
         let has_spent_time = has_spent_time || task.spent_time() != Duration::zero();
         let has_priorities = has_priorities || task.priority().is_some();
         let has_projects = has_projects || task.project().is_some();
+        let notes_nb_width = notes_nb_width.max(Self::guess_notes_width(
+          task.notes().iter().map(|note| note.content.as_str()),
+        ));
 
         (
           task_uid_width,
@@ -436,6 +477,7 @@ impl DisplayOptions {
           has_spent_time,
           has_priorities,
           has_projects,
+          notes_nb_width,
         )
       },
     );
@@ -452,6 +494,7 @@ impl DisplayOptions {
       has_projects,
       description_offset: 0,
       max_description_cols: None,
+      notes_nb_width,
     };
 
     opts.description_offset = opts.guess_description_col_offset(config);
@@ -532,11 +575,13 @@ impl DisplayOptions {
     let spent_width;
     let prio_width;
     let project_width;
+    let notes_nb_width;
 
     if config.display_empty_cols() {
       spent_width = self.spent_width + 1;
       prio_width = config.prio_col_name().width() + 1;
       project_width = self.project_width + 1;
+      notes_nb_width = self.notes_nb_width + 1;
     } else {
       // compute spent time if any
       if self.has_spent_time {
@@ -558,6 +603,13 @@ impl DisplayOptions {
       } else {
         project_width = 0;
       }
+
+      // compute notes number width if any
+      if self.notes_nb_width != 0 {
+        notes_nb_width = config.notes_nb_col_name().width() + 1;
+      } else {
+        notes_nb_width = 0;
+      }
     }
 
     // The “+ 1” are there because of the blank spaces we have in the output to separate columns.
@@ -568,8 +620,20 @@ impl DisplayOptions {
       + spent_width
       + prio_width
       + project_width
+      + notes_nb_width
       + self.status_width
       + 1 // to end up on the first column in the description
+  }
+
+  /// Guess the maximum width to align notes.
+  fn guess_notes_width<'a>(notes: impl Iterator<Item = &'a str>) -> usize {
+    let nb = notes.count();
+
+    if nb == 0 {
+      0
+    } else {
+      Self::guess_number_width(nb)
+    }
   }
 }
 
@@ -606,6 +670,15 @@ fn display_task_header(config: &Config, opts: &DisplayOptions) {
       " {project:<project_width$}",
       project = config.project_col_name().underline(),
       project_width = opts.project_width,
+    );
+  }
+
+  let notes_nb_width = opts.notes_nb_width;
+  if notes_nb_width != 0 {
+    print!(
+      " {notes_nb:<notes_nb_width$}",
+      notes_nb = config.notes_nb_col_name().underline(),
+      notes_nb_width = opts.notes_nb_width.max(config.notes_nb_col_name().len())
     );
   }
 
@@ -664,6 +737,16 @@ fn display_task_inline(config: &Config, uid: UID, task: &Task, opts: &DisplayOpt
       " {project:<project_width$}",
       project = friendly_project(task.project().unwrap_or("")),
       project_width = opts.project_width,
+    );
+  }
+
+  let notes_nb_width = opts.notes_nb_width;
+  let notes_nb = task.notes().len();
+  if notes_nb_width != 0 {
+    print!(
+      " {notes_nb:<notes_nb_width$}",
+      notes_nb = friendly_notes_nb(notes_nb),
+      notes_nb_width = opts.notes_nb_width.max(config.notes_nb_col_name().len())
     );
   }
 
@@ -814,6 +897,24 @@ fn friendly_spent_time(dur: Duration, status: Status) -> impl Display {
   }
 }
 
+/// String representation of a number of notes.
+fn friendly_notes_nb(nb: usize) -> impl Display {
+  if nb != 0 {
+    nb.to_string().blue().italic()
+  } else {
+    "".normal()
+  }
+}
+
+/// String representation of a date.
+fn friendly_date_time(date_time: &DateTime<Utc>) -> impl Display {
+  date_time
+    .format("%a, %d %b %Y at %H:%M")
+    .to_string()
+    .italic()
+    .blue()
+}
+
 #[cfg(test)]
 mod unit_tests {
   use super::*;
@@ -873,22 +974,7 @@ mod unit_tests {
 
   #[test]
   fn display_options_term_width() {
-    let main_config = MainConfig::new(
-      "N/A",
-      "TODO",
-      "WIP",
-      "DONE",
-      "CANCELLED",
-      "UID",
-      "Age",
-      "Spent",
-      "Prio",
-      "Project",
-      "Status",
-      "Desc",
-      false,
-      2,
-    );
+    let main_config = MainConfig::default();
     let config = Config::new(main_config, ColorConfig::default());
     let tasks = &[(UID::default(), &Task::new("Foo"))];
     let term = DummyTerm::new([100, 1]);
@@ -904,22 +990,7 @@ mod unit_tests {
 
   #[test]
   fn display_options_should_yield_no_description_if_too_short() {
-    let main_config = MainConfig::new(
-      "N/A",
-      "TODO",
-      "WIP",
-      "DONE",
-      "CANCELLED",
-      "UID",
-      "Age",
-      "Spent",
-      "Prio",
-      "Project",
-      "Status",
-      "Desc",
-      false,
-      2,
-    );
+    let main_config = MainConfig::default();
     let config = Config::new(main_config, ColorConfig::default());
     let tasks = &[(UID::default(), &Task::new("Foo"))];
     let term = DummyTerm::new([100, 1]);
