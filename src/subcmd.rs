@@ -1,13 +1,13 @@
-use std::error::Error;
-
-use colored::Colorize;
-
 use crate::{
+  cli::NoteCommand,
   cli::{add_task, edit_task, list_tasks, show_task, SubCommand},
   config::Config,
+  interactive_editor::interactively_edit,
   task::{Status, TaskManager, UID},
   term::Term,
 };
+use colored::Colorize;
+use std::error::Error;
 
 pub fn run_subcmd(
   config: Config,
@@ -128,6 +128,28 @@ pub fn run_subcmd(
             case_insensitive,
             metadata_filter,
           )?;
+        }
+
+        SubCommand::Note { note_uid, subcmd } => {
+          if let Some((task_uid, mut task)) = task {
+            match subcmd {
+              NoteCommand::Add => {
+                // open an interactive editor and create a new note
+                let note_content = interactively_edit(&config, "NEW_NOTE.md", "")?;
+                task.add_note(note_content);
+                task_mgr.save(&config)?;
+              }
+
+              NoteCommand::Edit => todo!(),
+
+              NoteCommand::List => todo!(),
+            }
+          } else {
+            println!(
+              "{}",
+              "missing or unknown task to add, edit or list notes about".red()
+            );
+          }
         }
       }
     }

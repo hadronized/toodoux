@@ -1,6 +1,7 @@
 mod cli;
 mod config;
 mod filter;
+mod interactive_editor;
 mod metadata;
 mod subcmd;
 mod task;

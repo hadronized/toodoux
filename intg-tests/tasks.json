@@ -1,6 +1,72 @@
 {
   "next_uid": 9,
   "tasks": {
+    "1": {
+      "name": "Show the recent updates",
+      "history": [
+        {
+          "Created": "2020-10-13T18:12:34.160928899Z"
+        },
+        {
+          "StatusChanged": {
+            "event_date": "2020-10-13T18:12:34.160928899Z",
+            "status": "Todo"
+          }
+        }
+      ]
+    },
+    "4": {
+      "name": "Zoo",
+      "history": [
+        {
+          "Created": "2020-10-13T19:04:54.834792525Z"
+        },
+        {
+          "StatusChanged": {
+            "event_date": "2020-10-13T19:04:54.834792525Z",
+            "status": "Todo"
+          }
+        },
+        {
+          "SetPriority": {
+            "event_date": "2020-10-13T19:04:54.834795370Z",
+            "priority": "Medium"
+          }
+        },
+        {
+          "StatusChanged": {
+            "event_date": "2020-10-13T19:04:54.834798776Z",
+            "status": "Ongoing"
+          }
+        }
+      ]
+    },
+    "0": {
+      "name": "Work on a next iteration version of toodoux",
+      "history": [
+        {
+          "Created": "2020-10-13T18:12:07.366945740Z"
+        },
+        {
+          "StatusChanged": {
+            "event_date": "2020-10-13T18:12:07.366945740Z",
+            "status": "Todo"
+          }
+        },
+        {
+          "StatusChanged": {
+            "event_date": "2020-10-13T18:12:07.366955739Z",
+            "status": "Ongoing"
+          }
+        },
+        {
+          "SetProject": {
+            "event_date": "2020-10-13T18:14:18.451702524Z",
+            "project": "toodoux"
+          }
+        }
+      ]
+    },
     "3": {
       "name": "Bar",
       "history": [
@@ -48,31 +114,37 @@
             "event_date": "2020-10-13T19:10:50Z",
             "note": "I’d like to discuss about my previous note. This is not a test. I repeat: this is not a test."
           }
+        },
+        {
+          "NoteAdded": {
+            "event_date": "2020-11-16T00:38:03.545945645Z",
+            "note": "# Yay!\n\nThis note was added in interactive mode with `neovim`!\n\n"
+          }
         }
       ]
     },
-    "4": {
-      "name": "Zoo",
+    "6": {
+      "name": "Do this right now!",
       "history": [
         {
-          "Created": "2020-10-13T19:04:54.834792525Z"
+          "Created": "2020-10-13T19:05:13.148969605Z"
         },
         {
           "StatusChanged": {
-            "event_date": "2020-10-13T19:04:54.834792525Z",
+            "event_date": "2020-10-13T19:05:13.148969605Z",
             "status": "Todo"
           }
         },
         {
-          "SetPriority": {
-            "event_date": "2020-10-13T19:04:54.834795370Z",
-            "priority": "Medium"
+          "AddTag": {
+            "event_date": "2020-10-13T19:05:13.148972370Z",
+            "tag": "urgent"
           }
         },
         {
-          "StatusChanged": {
-            "event_date": "2020-10-13T19:04:54.834798776Z",
-            "status": "Ongoing"
+          "SetPriority": {
+            "event_date": "2020-10-13T19:05:13.148973984Z",
+            "priority": "Critical"
           }
         }
       ]
@@ -93,20 +165,6 @@
           "StatusChanged": {
             "event_date": "2020-10-15T12:06:41.116349475Z",
             "status": "Cancelled"
-          }
-        }
-      ]
-    },
-    "1": {
-      "name": "Show the recent updates",
-      "history": [
-        {
-          "Created": "2020-10-13T18:12:34.160928899Z"
-        },
-        {
-          "StatusChanged": {
-            "event_date": "2020-10-13T18:12:34.160928899Z",
-            "status": "Todo"
           }
         }
       ]
@@ -191,58 +249,6 @@
           "SetPriority": {
             "event_date": "2020-10-15T12:07:10.294990990Z",
             "priority": "High"
-          }
-        }
-      ]
-    },
-    "0": {
-      "name": "Work on a next iteration version of toodoux",
-      "history": [
-        {
-          "Created": "2020-10-13T18:12:07.366945740Z"
-        },
-        {
-          "StatusChanged": {
-            "event_date": "2020-10-13T18:12:07.366945740Z",
-            "status": "Todo"
-          }
-        },
-        {
-          "StatusChanged": {
-            "event_date": "2020-10-13T18:12:07.366955739Z",
-            "status": "Ongoing"
-          }
-        },
-        {
-          "SetProject": {
-            "event_date": "2020-10-13T18:14:18.451702524Z",
-            "project": "toodoux"
-          }
-        }
-      ]
-    },
-    "6": {
-      "name": "Do this right now!",
-      "history": [
-        {
-          "Created": "2020-10-13T19:05:13.148969605Z"
-        },
-        {
-          "StatusChanged": {
-            "event_date": "2020-10-13T19:05:13.148969605Z",
-            "status": "Todo"
-          }
-        },
-        {
-          "AddTag": {
-            "event_date": "2020-10-13T19:05:13.148972370Z",
-            "tag": "urgent"
-          }
-        },
-        {
-          "SetPriority": {
-            "event_date": "2020-10-13T19:05:13.148973984Z",
-            "priority": "Critical"
           }
         }
       ]

@@ -117,6 +117,32 @@ pub enum SubCommand {
     /// Metadata filter.
     metadata_filter: Vec<String>,
   },
+
+  /// List, add and edit notes.
+  Note {
+    /// UID of a note to operate on.
+    note_uid: Option<UID>,
+
+    #[structopt(subcommand)]
+    subcmd: NoteCommand,
+  },
+}
+
+#[derive(Debug, StructOpt)]
+pub enum NoteCommand {
+  /// Add a new note.
+  ///
+  /// You will be prompted to write a note within an editor.
+  #[structopt(visible_aliases = &["a"])]
+  Add,
+
+  /// Edit a note.
+  ///
+  /// You will be prompted to edit the node within an editor.
+  Edit,
+
+  /// List all notes.
+  List,
 }
 
 /// List tasks.
