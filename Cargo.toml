@@ -27,7 +27,7 @@ serde_json = "1"
 structopt = "0.3.21"
 term_size = "0.3.2"
 tempdir = "0.3.7"
-toml = "0.5.6"
+toml = "0.5.8"
 unicase = "2.6.0"
 unicode-width = "0.1.8"
 
