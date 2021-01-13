@@ -1,7 +1,7 @@
 # Contributing
 
-This document is the official contribution guide contributors must follow. It will be **greatly appreciated** if you 
-read it first before contributing. It will also prevent you from losing your time if you open an issue / make a PR that 
+This document is the official contribution guide contributors must follow. It will be **greatly appreciated** if you
+read it first before contributing. It will also prevent you from losing your time if you open an issue / make a PR that
 doesn’t comply to this document.
 
 <!-- vim-markdown-toc GFM -->
@@ -102,7 +102,7 @@ Please format your git messages like so:
 > that it is easier to generate changelogs when reading the git log.
 
 The `[project(s)]` header is mandatory if your commit has changes in any of the crates handled by this repository.
-If the repository you contribute to has a single project in it, you can omit the `[project(s)]` part. If you make 
+If the repository you contribute to has a single project in it, you can omit the `[project(s)]` part. If you make
 a change that is cross-crate, feel free to separate them with commas, like `[crate_a, crate_b]`. If
 you make a change that touches all the crates, you can use `[all]`. If you change something that is not related
 to a crate, like the front README, CONTRIBUTING file, CI setup, top-level `Cargo.toml`, etc., then you can omit
@@ -115,23 +115,23 @@ to edit a commit message. :)**
 
 Your commits should be as atomic as possible. That means that if you make a change that touches two different
 concepts / has different scopes, most of the time, you want two commits – for instance one commit for the backend crate
-and one commit for the interface crate. There are exceptions, so this is not an absolute rule, but take some time 
+and one commit for the interface crate. There are exceptions, so this is not an absolute rule, but take some time
 thinking about whether you should split your commits or not. Commits which add a feature / fix a bug _and_ add tests at
 the same time are fine.
 
 However, here’s a non-comprehensive list of commits considered bad and that will be refused:
 
-- **Formatting, refactoring, cleaning, linting code in a PR that is not strictly about formatting**. If you open a PR to 
-  fix a bug, implement a  feature, change configuration, add metadata to the CI, etc. — pretty much anything — but you 
+- **Formatting, refactoring, cleaning, linting code in a PR that is not strictly about formatting**. If you open a PR to
+  fix a bug, implement a  feature, change configuration, add metadata to the CI, etc. — pretty much anything — but you
   also format some old code that has nothing to do with your PR, apply a linter’s suggestions (such as `clippy`), remove
   old code, etc., then I will refuse your commit(s) and ask you to edit your PR.
 - **Too atomic commits**. If two commits are logically connected to one another and are small, it’s likely that you want
   to merge them as a single commit — unless they work on too different parts of your code. This is a bit subjective
-  topic, so I won’t be _too picky_ about it, but if I judge that you should split a commit into two or fixup two commits, 
+  topic, so I won’t be _too picky_ about it, but if I judge that you should split a commit into two or fixup two commits,
   please don’t take it too personal. :)
 
-If you don’t know how to write your commits in an atomic maneer, think about how one would revert your commits if 
-something bad happens with your changes — like a big breaking change we need to roll back from very quickly. If your 
+If you don’t know how to write your commits in an atomic maneer, think about how one would revert your commits if
+something bad happens with your changes — like a big breaking change we need to roll back from very quickly. If your
 commits are not atomic enough, rolling them back will also roll back code that has nothing to do with your changes.
 
 ### Hygiene
