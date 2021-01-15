@@ -498,7 +498,17 @@ impl DisplayOptions {
     };
 
     opts.description_offset = opts.guess_description_col_offset(config);
-    opts.max_description_cols = term.dimensions().unwrap()[0].checked_sub(opts.description_offset);
+
+    if let Some(term_dims) = term.dimensions() {
+      opts.max_description_cols = term_dims[0].checked_sub(opts.description_offset);
+    } else {
+      println!(
+        "{}",
+        "⚠ You’re using a terminal that doesn’t expose its dimensions; expect broken output ⚠"
+          .yellow()
+          .bold()
+      );
+    }
 
     opts
   }
