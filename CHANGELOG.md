@@ -1,6 +1,10 @@
-# Changelog
+# 0.3.1
 
-# 3.6
+> Jan 15, 2021
+
+- Fix a panic where the terminal doesn’t export its size (such as `eshell`).
+
+# 0.3
 
 > Nov 16th, 2020
 
