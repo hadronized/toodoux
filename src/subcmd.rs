@@ -1,6 +1,6 @@
 use crate::{
   cli::NoteCommand,
-  cli::{add_task, edit_task, list_tasks, show_task, SubCommand},
+  cli::{add_task, edit_task, list_tasks, show_task, show_task_history, SubCommand},
   config::Config,
   interactive_editor::interactively_edit,
   task::{Status, TaskManager, UID},
@@ -167,6 +167,14 @@ pub fn run_subcmd(
               "{}",
               "missing or unknown task to add, edit or list notes about".red()
             );
+          }
+        }
+
+        SubCommand::History => {
+          if let Some((uid, task)) = task {
+            show_task_history(&config, uid, task);
+          } else {
+            println!("{}", "missing or unknown task to display history".red());
           }
         }
       }

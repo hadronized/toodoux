@@ -218,6 +218,11 @@ impl Task {
     notes
   }
 
+  /// Iterate over the whole history, if any.
+  pub fn history(&self) -> impl Iterator<Item = &Event> {
+    self.history.iter()
+  }
+
   /// Compute the time spent on this task.
   pub fn spent_time(&self) -> Duration {
     let (spent, last_wip) =
