@@ -1,8 +1,8 @@
 //! Command line interface.
 
 use chrono::{DateTime, Duration, Utc};
-use colored::Colorize;
-use itertools::Itertools;
+use colored::Colorize as _;
+use itertools::Itertools as _;
 use std::{cmp::Reverse, error::Error, fmt::Display, iter::once, path::PathBuf};
 use structopt::StructOpt;
 use unicode_width::UnicodeWidthStr;
@@ -888,7 +888,7 @@ fn display_task_inline(config: &Config, uid: UID, task: &Task, opts: &DisplayOpt
 fn display_tags(task: &Task, opts: &DisplayOptions) {
   print!(
     " {tags:<tags_width$}",
-    tags = task.tags().intersperse(", ").collect::<String>(),
+    tags = task.tags().intersperse(", ").collect::<String>().yellow(),
     tags_width = opts.tags_width,
   );
 }
