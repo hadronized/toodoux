@@ -85,6 +85,7 @@ pub fn interactively_edit(
 
   let _ = process::Command::new(editor)
     .arg(&file_path)
+    .arg("+$")
     .spawn()
     .map_err(InteractiveEditingError::InteractiveEditorError)?
     .wait()

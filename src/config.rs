@@ -80,6 +80,12 @@ pub struct MainConfig {
 
   /// Display tags in listings.
   display_tags_listings: bool,
+
+  /// Show the previous notes when adding a new note.
+  ///
+  /// This option allows to show all the previously recorded notes for a given task as a header of the current note.
+  /// The note history will be automatically discarded and will not appear in the new note.
+  previous_notes_help: bool,
 }
 
 impl Default for MainConfig {
@@ -103,6 +109,7 @@ impl Default for MainConfig {
       max_description_lines: 2,
       notes_nb_col_name: "Notes".to_owned(),
       display_tags_listings: true,
+      previous_notes_help: true,
     }
   }
 }
@@ -128,6 +135,7 @@ impl MainConfig {
     max_description_lines: usize,
     notes_nb_col_name: impl Into<String>,
     display_tags_listings: bool,
+    previous_notes_help: bool,
   ) -> Self {
     Self {
       interactive_editor: interactive_editor.into(),
@@ -148,6 +156,7 @@ impl MainConfig {
       max_description_lines,
       notes_nb_col_name: notes_nb_col_name.into(),
       display_tags_listings,
+      previous_notes_help,
     }
   }
 }
@@ -257,6 +266,10 @@ impl Config {
 
   pub fn display_tags_listings(&self) -> bool {
     self.main.display_tags_listings
+  }
+
+  pub fn previous_notes_help(&self) -> bool {
+    self.main.previous_notes_help
   }
 
   pub fn get() -> Result<Option<Self>, Box<dyn Error>> {

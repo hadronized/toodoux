@@ -1040,13 +1040,14 @@ fn friendly_notes_nb(nb: usize) -> impl Display {
   }
 }
 
-/// String representation of a date.
+/// Friendly string representation of a date.
+pub fn date_time_to_string(date_time: &DateTime<Utc>) -> String {
+  date_time.format("%a, %d %b %Y at %H:%M").to_string()
+}
+
+/// Friendly string representation of a date.
 fn friendly_date_time(date_time: &DateTime<Utc>) -> impl Display {
-  date_time
-    .format("%a, %d %b %Y at %H:%M")
-    .to_string()
-    .italic()
-    .blue()
+  date_time_to_string(date_time).italic().blue()
 }
 
 #[cfg(test)]
