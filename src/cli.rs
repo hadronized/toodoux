@@ -44,6 +44,10 @@ pub enum SubCommand {
     #[structopt(long)]
     done: bool,
 
+    /// Log a note after creating the item.
+    #[structopt(short, long)]
+    note: bool,
+
     /// Content of the task.
     ///
     /// If nothing is set, an interactive prompt is spawned for you to enter the content
@@ -258,7 +262,7 @@ pub fn add_task(
   start: bool,
   done: bool,
   content: Vec<String>,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<Task, Box<dyn Error>> {
   // validate the metadata extracted from the content, if any
   let (metadata, name) = Metadata::from_words(content.iter().map(|s| s.as_str()));
   Metadata::validate(&metadata)?;
@@ -285,7 +289,7 @@ pub fn add_task(
   display_task_header(config, &display_opts);
   display_task_inline(config, uid, &task, &display_opts);
 
-  Ok(())
+  Ok(task)
 }
 
 /// Edit a task’s name or metadata.
