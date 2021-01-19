@@ -157,23 +157,34 @@ pub fn run_subcmd(
         SubCommand::Note { note_uid, subcmd } => {
           if let Some((task_uid, task)) = task {
             match subcmd {
-              NoteCommand::Add => {
-                let note = interactively_edit_note(&config, &task, "")?;
+              NoteCommand::Add { no_history } => {
+                let note = interactively_edit_note(
+                  &config,
+                  !no_history && config.previous_notes_help(),
+                  &task,
+                  "\n",
+                )?;
                 task.add_note(note);
                 task_mgr.save(&config)?;
               }
 
-              NoteCommand::Edit => {
+              NoteCommand::Edit { no_history } => {
                 if let Some(note_uid) = note_uid {
                   // get the note so that we can put it in the temporary file
                   let notes = task.notes();
+                  let note_uid = note_uid.dec();
                   let prenote = notes
                     .get(usize::from(note_uid))
                     .map(|note| note.content.as_str())
                     .unwrap_or_default();
 
                   // open an interactive editor and replace the previous note
-                  let note = interactively_edit_note(&config, &task, prenote)?;
+                  let note = interactively_edit_note(
+                    &config,
+                    !no_history && config.previous_notes_help(),
+                    &task,
+                    prenote,
+                  )?;
                   task.replace_note(note_uid, note)?;
                   task_mgr.save(&config)?;
                 } else {
@@ -243,20 +254,19 @@ fn default_list(
 
 /// Interactively edit a note for a given task.
 ///
-/// The `prefill` argument allows to pre-populate the content of the note. If it’s empty, the note
-/// might be pre-populated by the note history if the config allows for it.
+/// The note will be pre-populated by the note history if the config allows for it. The `prefill` argument allows to
+/// pre-populate the content of the note.
 ///
 /// The note is returned as a [`String`].
 fn interactively_edit_note(
   config: &Config,
+  with_history: bool,
   task: &Task,
   prefill: &str,
 ) -> Result<String, Box<dyn Error>> {
-  let prefill = if !prefill.is_empty() {
-    prefill.to_owned()
-  } else if config.previous_notes_help() {
+  let prefill = if with_history {
     // if we have the previously recorded note help, pre-populate the file with the previous notes
-    let mut prefill = task
+    let mut new_prefill = task
       .notes()
       .into_iter()
       .enumerate()
@@ -280,37 +290,37 @@ fn interactively_edit_note(
       })
       .join("\n\n");
 
-    prefill +=
+    new_prefill +=
       "> Above are the previously recorded notes. You are free to temper with them if you want.\n";
-    prefill += "> You can add the content of your note under the following line. However, do not remove this line!\n";
-    prefill += PREVIOUS_NOTES_HELP_END_MARKER;
-    prefill += "\n";
-    prefill
+    new_prefill += "> You can add the content of your note under the following line. However, do not remove this line!\n";
+    new_prefill += PREVIOUS_NOTES_HELP_END_MARKER;
+    new_prefill += prefill;
+    new_prefill
   } else {
-    String::new()
+    prefill.to_owned()
   };
 
   let note_content = interactively_edit(&config, "NEW_NOTE.md", &prefill)?;
 
-  if note_content.is_empty() {
-    Err(Box::new(SubCmdError::EmptyNote))
-  } else {
-    if config.previous_notes_help() {
-      if let Some(marker_index) = note_content.find(PREVIOUS_NOTES_HELP_END_MARKER) {
-        let content = note_content
-          .get(marker_index + PREVIOUS_NOTES_HELP_END_MARKER.len()..)
-          .unwrap();
+  if with_history {
+    if let Some(marker_index) = note_content.find(PREVIOUS_NOTES_HELP_END_MARKER) {
+      let content = note_content
+        .get(marker_index + PREVIOUS_NOTES_HELP_END_MARKER.len()..)
+        .unwrap();
 
-        Ok(content.to_owned())
+      if content.trim().is_empty() {
+        Err(Box::new(SubCmdError::EmptyNote))
       } else {
-        Err(Box::new(SubCmdError::CannotEditNote(format!(
-          "{}",
-          "I told you not to temper with this line!"
-            .to_string()
-            .red()
-            .bold(),
-        ))))
+        Ok(content.to_owned())
       }
+    } else {
+      Err(Box::new(SubCmdError::CannotEditNote(
+        "I told you not to temper with this line!".to_owned(),
+      )))
+    }
+  } else {
+    if note_content.trim().is_empty() {
+      Err(Box::new(SubCmdError::EmptyNote))
     } else {
       Ok(note_content)
     }

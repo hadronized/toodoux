@@ -1,12 +1,5 @@
 //! Command line interface.
 
-use chrono::{DateTime, Duration, Utc};
-use colored::Colorize as _;
-use itertools::Itertools as _;
-use std::{cmp::Reverse, error::Error, fmt::Display, iter::once, path::PathBuf};
-use structopt::StructOpt;
-use unicode_width::UnicodeWidthStr;
-
 use crate::{
   config::Config,
   filter::TaskDescriptionFilter,
@@ -14,6 +7,12 @@ use crate::{
   task::{Event, Status, Task, TaskManager, UID},
   term::Term,
 };
+use chrono::{DateTime, Duration, Utc};
+use colored::Colorize as _;
+use itertools::Itertools as _;
+use std::{cmp::Reverse, error::Error, fmt::Display, iter::once, path::PathBuf};
+use structopt::StructOpt;
+use unicode_width::UnicodeWidthStr;
 
 #[derive(Debug, StructOpt)]
 #[structopt(
@@ -137,15 +136,25 @@ pub enum NoteCommand {
   ///
   /// You will be prompted to write a note within an editor.
   #[structopt(visible_aliases = &["a"])]
-  Add,
+  Add {
+    /// Edit the note without note history.
+    ///
+    /// Overrides the user configuration.
+    #[structopt(long)]
+    no_history: bool,
+  },
 
   /// Edit a note.
   ///
   /// You will be prompted to edit the node within an editor.
   #[structopt(visible_aliases = &["ed", "e"])]
-  Edit,
-  // /// List all notes.
-  // List,
+  Edit {
+    /// Edit the note without note history.
+    ///
+    /// Overrides the user configuration.
+    #[structopt(long)]
+    no_history: bool,
+  },
 }
 
 /// List tasks.
