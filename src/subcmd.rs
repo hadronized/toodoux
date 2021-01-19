@@ -62,14 +62,19 @@ pub fn run_subcmd(
         SubCommand::Add {
           start,
           done,
-          note,
+          note: with_note,
           content,
         } => {
           if task.is_none() {
-            let task = add_task(&config, &term, start, done, content)?;
+            let uid = add_task(&config, &mut task_mgr, &term, start, done, content)?;
 
-            if note {
-              interactively_edit_note(&config, false, &task, "")?;
+            // TODO: rework this while refactoring
+            if with_note {
+              if let Some(task) = task_mgr.get_mut(uid) {
+                let note = interactively_edit_note(&config, false, &task, "")?;
+                task.add_note(note);
+                task_mgr.save(&config)?;
+              }
             }
           } else {
             println!(
