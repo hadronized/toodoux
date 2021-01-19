@@ -72,6 +72,9 @@ pub struct MainConfig {
   /// "Number of notes” column name."
   notes_nb_col_name: String,
 
+  /// Display tags in listings.
+  display_tags_listings: bool,
+
   /// Editor to use for interactive editing.
   ///
   /// If absent, default to `$EDITOR`. If neither the configuration or `$EDITOR` is set,
@@ -98,6 +101,7 @@ impl Default for MainConfig {
       display_empty_cols: false,
       max_description_lines: 2,
       notes_nb_col_name: "Notes".to_owned(),
+      display_tags_listings: true,
       interactive_editor: None,
     }
   }
@@ -121,7 +125,8 @@ impl MainConfig {
     description_col_name: impl Into<String>,
     display_empty_cols: bool,
     max_description_lines: usize,
-    notes_nb_col_name: String,
+    notes_nb_col_name: impl Into<String>,
+    display_tags_listings: bool,
     interactive_editor: impl Into<Option<String>>,
   ) -> Self {
     Self {
@@ -140,7 +145,8 @@ impl MainConfig {
       description_col_name: description_col_name.into(),
       display_empty_cols,
       max_description_lines,
-      notes_nb_col_name,
+      notes_nb_col_name: notes_nb_col_name.into(),
+      display_tags_listings,
       interactive_editor: interactive_editor.into(),
     }
   }
@@ -243,6 +249,10 @@ impl Config {
 
   pub fn notes_nb_col_name(&self) -> &str {
     &self.main.notes_nb_col_name
+  }
+
+  pub fn display_tags_listings(&self) -> bool {
+    self.main.display_tags_listings
   }
 
   pub fn interactive_editor(&self) -> Option<&str> {

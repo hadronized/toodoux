@@ -710,7 +710,7 @@ impl DisplayOptions {
       }
 
       // compute tags width if any
-      if self.has_tags {
+      if config.display_tags_listings() && self.has_tags {
         tags_width = self.tags_width + 1; // FIXME
       } else {
         tags_width = 0;
@@ -786,7 +786,7 @@ fn display_task_header(config: &Config, opts: &DisplayOptions) {
     );
   }
 
-  if display_empty_cols || opts.has_tags {
+  if config.display_tags_listings() && (display_empty_cols || opts.has_tags) {
     print!(
       " {tags:<tags_width$}",
       tags = config.tags_col_name().underline(),
@@ -861,7 +861,7 @@ fn display_task_inline(config: &Config, uid: UID, task: &Task, opts: &DisplayOpt
     );
   }
 
-  if display_empty_cols || opts.has_tags {
+  if config.display_tags_listings() && (display_empty_cols || opts.has_tags) {
     display_tags(task, opts);
   }
 
