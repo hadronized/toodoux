@@ -356,6 +356,10 @@ impl UID {
   pub fn val(self) -> u32 {
     self.0
   }
+
+  pub fn dec(self) -> Self {
+    Self(self.0.checked_sub(1).unwrap_or(0))
+  }
 }
 
 impl From<UID> for u32 {

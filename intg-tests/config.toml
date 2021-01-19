@@ -15,6 +15,7 @@ description_col_name = 'Description'
 display_empty_cols = false
 max_description_lines = 2
 notes_nb_col_name = "Notes"
+display_tags_listings = true
 
 [colors.description.ongoing]
 foreground = 'black'

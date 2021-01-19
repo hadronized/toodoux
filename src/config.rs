@@ -24,6 +24,12 @@ pub struct Config {
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(default)]
 pub struct MainConfig {
+  /// Editor to use for interactive editing.
+  ///
+  /// If absent, default to `$EDITOR`. If neither the configuration or `$EDITOR` is set,
+  /// interactive editing is disabled.
+  interactive_editor: Option<String>,
+
   /// Path to the folder containing all the tasks.
   tasks_file: PathBuf,
 
@@ -75,16 +81,17 @@ pub struct MainConfig {
   /// Display tags in listings.
   display_tags_listings: bool,
 
-  /// Editor to use for interactive editing.
+  /// Show the previous notes when adding a new note.
   ///
-  /// If absent, default to `$EDITOR`. If neither the configuration or `$EDITOR` is set,
-  /// interactive editing is disabled.
-  interactive_editor: Option<String>,
+  /// This option allows to show all the previously recorded notes for a given task as a header of the current note.
+  /// The note history will be automatically discarded and will not appear in the new note.
+  previous_notes_help: bool,
 }
 
 impl Default for MainConfig {
   fn default() -> Self {
     Self {
+      interactive_editor: None,
       tasks_file: dirs::config_dir().unwrap().join("toodoux"),
       todo_alias: "TODO".to_owned(),
       wip_alias: "WIP".to_owned(),
@@ -102,7 +109,7 @@ impl Default for MainConfig {
       max_description_lines: 2,
       notes_nb_col_name: "Notes".to_owned(),
       display_tags_listings: true,
-      interactive_editor: None,
+      previous_notes_help: true,
     }
   }
 }
@@ -110,6 +117,7 @@ impl Default for MainConfig {
 impl MainConfig {
   #[allow(dead_code)]
   pub fn new(
+    interactive_editor: impl Into<Option<String>>,
     tasks_file: impl Into<PathBuf>,
     todo_alias: impl Into<String>,
     wip_alias: impl Into<String>,
@@ -127,9 +135,10 @@ impl MainConfig {
     max_description_lines: usize,
     notes_nb_col_name: impl Into<String>,
     display_tags_listings: bool,
-    interactive_editor: impl Into<Option<String>>,
+    previous_notes_help: bool,
   ) -> Self {
     Self {
+      interactive_editor: interactive_editor.into(),
       tasks_file: tasks_file.into(),
       todo_alias: todo_alias.into(),
       wip_alias: wip_alias.into(),
@@ -147,7 +156,7 @@ impl MainConfig {
       max_description_lines,
       notes_nb_col_name: notes_nb_col_name.into(),
       display_tags_listings,
-      interactive_editor: interactive_editor.into(),
+      previous_notes_help,
     }
   }
 }
@@ -185,6 +194,10 @@ impl Config {
 
   pub fn config_toml_path(&self) -> PathBuf {
     self.main.tasks_file.join("config.toml")
+  }
+
+  pub fn interactive_editor(&self) -> Option<&str> {
+    self.main.interactive_editor.as_deref()
   }
 
   pub fn tasks_path(&self) -> PathBuf {
@@ -255,8 +268,8 @@ impl Config {
     self.main.display_tags_listings
   }
 
-  pub fn interactive_editor(&self) -> Option<&str> {
-    self.main.interactive_editor.as_deref()
+  pub fn previous_notes_help(&self) -> bool {
+    self.main.previous_notes_help
   }
 
   pub fn get() -> Result<Option<Self>, Box<dyn Error>> {
