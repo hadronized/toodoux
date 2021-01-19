@@ -1,7 +1,8 @@
 //! Command line interface.
 
 use chrono::{DateTime, Duration, Utc};
-use colored::Colorize;
+use colored::Colorize as _;
+use itertools::Itertools as _;
 use std::{cmp::Reverse, error::Error, fmt::Display, iter::once, path::PathBuf};
 use structopt::StructOpt;
 use unicode_width::UnicodeWidthStr;
@@ -13,7 +14,6 @@ use crate::{
   task::{Event, Status, Task, TaskManager, UID},
   term::Term,
 };
-use itertools::Itertools;
 
 #[derive(Debug, StructOpt)]
 #[structopt(
@@ -472,12 +472,16 @@ struct DisplayOptions {
   description_width: usize,
   /// Width of the task project column.
   project_width: usize,
+  /// Width of the task tags column.
+  tags_width: usize,
   /// Whether any task has spent time.
   has_spent_time: bool,
   /// Whether we have a priority in at least one task.
   has_priorities: bool,
   /// Whether we have a project in at least one task.
   has_projects: bool,
+  /// Whether we have a tag in at least one task.
+  has_tags: bool,
   /// Offset to use for the description column.
   description_offset: usize,
   /// Maximum columns to fit in the description column.
@@ -505,12 +509,14 @@ impl DisplayOptions {
       status_width,
       description_width,
       project_width,
+      tags_width,
       has_spent_time,
       has_priorities,
       has_projects,
+      has_tags,
       notes_nb_width,
     ) = tasks.into_iter().fold(
-      (0, 0, 0, 0, 0, 0, false, false, false, 0),
+      (0, 0, 0, 0, 0, 0, 0, false, false, false, false, 0),
       |(
         task_uid_width,
         age_width,
@@ -518,9 +524,11 @@ impl DisplayOptions {
         status_width,
         description_width,
         project_width,
+        tags_width,
         has_spent_time,
         has_priorities,
         has_projects,
+        has_tags,
         notes_nb_width,
       ),
        (uid, task)| {
@@ -530,9 +538,11 @@ impl DisplayOptions {
         let status_width = status_width.max(Self::guess_task_status_width(&config, task.status()));
         let description_width = description_width.max(task.name().width());
         let project_width = project_width.max(Self::guess_task_project_width(&task).unwrap_or(0));
+        let tags_width = tags_width.max(Self::guess_tags_width(&task));
         let has_spent_time = has_spent_time || task.spent_time() != Duration::zero();
         let has_priorities = has_priorities || task.priority().is_some();
         let has_projects = has_projects || task.project().is_some();
+        let has_tags = has_tags || task.tags().next().is_some();
         let notes_nb_width = notes_nb_width.max(Self::guess_notes_width(
           task.notes().iter().map(|note| note.content.as_str()),
         ));
@@ -544,9 +554,11 @@ impl DisplayOptions {
           status_width,
           description_width,
           project_width,
+          tags_width,
           has_spent_time,
           has_priorities,
           has_projects,
+          has_tags,
           notes_nb_width,
         )
       },
@@ -559,9 +571,11 @@ impl DisplayOptions {
       status_width: status_width.max(config.status_col_name().width()),
       description_width: description_width.max(config.description_col_name().width()),
       project_width: project_width.max(config.project_col_name().width()),
+      tags_width: tags_width.max(config.tags_col_name().width()),
       has_spent_time,
       has_priorities,
       has_projects,
+      has_tags,
       description_offset: 0,
       max_description_cols: None,
       notes_nb_width,
@@ -648,6 +662,15 @@ impl DisplayOptions {
     task.project().map(UnicodeWidthStr::width)
   }
 
+  /// Guess the width required to represent the task tags.
+  fn guess_tags_width(task: &Task) -> usize {
+    task
+      .tags()
+      .intersperse(", ")
+      .map(UnicodeWidthStr::width)
+      .sum()
+  }
+
   /// Compute the column offset at which descriptions can start.
   ///
   /// The way we compute this is by summing all the display width and adding the require padding.
@@ -655,12 +678,14 @@ impl DisplayOptions {
     let spent_width;
     let prio_width;
     let project_width;
+    let tags_width;
     let notes_nb_width;
 
     if config.display_empty_cols() {
       spent_width = self.spent_width + 1;
       prio_width = config.prio_col_name().width() + 1;
       project_width = self.project_width + 1;
+      tags_width = self.tags_width + 1;
       notes_nb_width = self.notes_nb_width + 1;
     } else {
       // compute spent time if any
@@ -684,6 +709,13 @@ impl DisplayOptions {
         project_width = 0;
       }
 
+      // compute tags width if any
+      if config.display_tags_listings() && self.has_tags {
+        tags_width = self.tags_width + 1; // FIXME
+      } else {
+        tags_width = 0;
+      }
+
       // compute notes number width if any
       if self.notes_nb_width != 0 {
         notes_nb_width = config.notes_nb_col_name().width() + 1;
@@ -700,6 +732,7 @@ impl DisplayOptions {
       + spent_width
       + prio_width
       + project_width
+      + tags_width
       + notes_nb_width
       + self.status_width
       + 1 // to end up on the first column in the description
@@ -750,6 +783,14 @@ fn display_task_header(config: &Config, opts: &DisplayOptions) {
       " {project:<project_width$}",
       project = config.project_col_name().underline(),
       project_width = opts.project_width,
+    );
+  }
+
+  if config.display_tags_listings() && (display_empty_cols || opts.has_tags) {
+    print!(
+      " {tags:<tags_width$}",
+      tags = config.tags_col_name().underline(),
+      tags_width = opts.tags_width,
     );
   }
 
@@ -820,6 +861,10 @@ fn display_task_inline(config: &Config, uid: UID, task: &Task, opts: &DisplayOpt
     );
   }
 
+  if config.display_tags_listings() && (display_empty_cols || opts.has_tags) {
+    display_tags(task, opts);
+  }
+
   let notes_nb_width = opts.notes_nb_width;
   let notes_nb = task.notes().len();
   if notes_nb_width != 0 {
@@ -837,6 +882,15 @@ fn display_task_inline(config: &Config, uid: UID, task: &Task, opts: &DisplayOpt
   );
 
   display_description(config, opts, status, task_name);
+}
+
+/// Display the tags by respecting the allowed tags column size.
+fn display_tags(task: &Task, opts: &DisplayOptions) {
+  print!(
+    " {tags:<tags_width$}",
+    tags = task.tags().intersperse(", ").collect::<String>().yellow(),
+    tags_width = opts.tags_width,
+  );
 }
 
 /// Display a description by respecting the allowed description column size.

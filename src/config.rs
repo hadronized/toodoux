@@ -54,6 +54,9 @@ pub struct MainConfig {
   /// “Project” column name.
   project_col_name: String,
 
+  /// “Tags” column name.
+  tags_col_name: String,
+
   /// “Status” column name.
   status_col_name: String,
 
@@ -68,6 +71,9 @@ pub struct MainConfig {
 
   /// "Number of notes” column name."
   notes_nb_col_name: String,
+
+  /// Display tags in listings.
+  display_tags_listings: bool,
 
   /// Editor to use for interactive editing.
   ///
@@ -89,11 +95,13 @@ impl Default for MainConfig {
       spent_col_name: "Spent".to_owned(),
       prio_col_name: "Prio".to_owned(),
       project_col_name: "Project".to_owned(),
+      tags_col_name: "Tags".to_owned(),
       status_col_name: "Status".to_owned(),
       description_col_name: "Description".to_owned(),
       display_empty_cols: false,
       max_description_lines: 2,
       notes_nb_col_name: "Notes".to_owned(),
+      display_tags_listings: true,
       interactive_editor: None,
     }
   }
@@ -112,11 +120,13 @@ impl MainConfig {
     spent_col_name: impl Into<String>,
     prio_col_name: impl Into<String>,
     project_col_name: impl Into<String>,
+    tags_col_name: impl Into<String>,
     status_col_name: impl Into<String>,
     description_col_name: impl Into<String>,
     display_empty_cols: bool,
     max_description_lines: usize,
-    notes_nb_col_name: String,
+    notes_nb_col_name: impl Into<String>,
+    display_tags_listings: bool,
     interactive_editor: impl Into<Option<String>>,
   ) -> Self {
     Self {
@@ -130,11 +140,13 @@ impl MainConfig {
       spent_col_name: spent_col_name.into(),
       prio_col_name: prio_col_name.into(),
       project_col_name: project_col_name.into(),
+      tags_col_name: tags_col_name.into(),
       status_col_name: status_col_name.into(),
       description_col_name: description_col_name.into(),
       display_empty_cols,
       max_description_lines,
-      notes_nb_col_name,
+      notes_nb_col_name: notes_nb_col_name.into(),
+      display_tags_listings,
       interactive_editor: interactive_editor.into(),
     }
   }
@@ -215,6 +227,10 @@ impl Config {
     &self.main.project_col_name
   }
 
+  pub fn tags_col_name(&self) -> &str {
+    &self.main.tags_col_name
+  }
+
   pub fn status_col_name(&self) -> &str {
     &self.main.status_col_name
   }
@@ -233,6 +249,10 @@ impl Config {
 
   pub fn notes_nb_col_name(&self) -> &str {
     &self.main.notes_nb_col_name
+  }
+
+  pub fn display_tags_listings(&self) -> bool {
+    self.main.display_tags_listings
   }
 
   pub fn interactive_editor(&self) -> Option<&str> {
