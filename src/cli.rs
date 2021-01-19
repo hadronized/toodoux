@@ -258,16 +258,16 @@ pub fn list_tasks(
 /// Add a new task.
 pub fn add_task(
   config: &Config,
+  task_mgr: &mut TaskManager,
   term: &impl Term,
   start: bool,
   done: bool,
   content: Vec<String>,
-) -> Result<Task, Box<dyn Error>> {
+) -> Result<UID, Box<dyn Error>> {
   // validate the metadata extracted from the content, if any
   let (metadata, name) = Metadata::from_words(content.iter().map(|s| s.as_str()));
   Metadata::validate(&metadata)?;
 
-  let mut task_mgr = TaskManager::new_from_config(config)?;
   let mut task = Task::new(name);
 
   // apply the metadata
@@ -281,6 +281,7 @@ pub fn add_task(
   }
 
   let uid = task_mgr.register_task(task.clone());
+
   task_mgr.save(config)?;
 
   // display options
@@ -289,7 +290,7 @@ pub fn add_task(
   display_task_header(config, &display_opts);
   display_task_inline(config, uid, &task, &display_opts);
 
-  Ok(task)
+  Ok(uid)
 }
 
 /// Edit a task’s name or metadata.
