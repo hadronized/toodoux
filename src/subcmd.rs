@@ -62,10 +62,15 @@ pub fn run_subcmd(
         SubCommand::Add {
           start,
           done,
+          note,
           content,
         } => {
           if task.is_none() {
-            add_task(&config, &term, start, done, content)?;
+            let task = add_task(&config, &term, start, done, content)?;
+
+            if note {
+              interactively_edit_note(&config, false, &task, "")?;
+            }
           } else {
             println!(
               "{}",
