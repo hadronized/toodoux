@@ -27,8 +27,10 @@ possible aliases, those will be listed when the command is introduced.
 
 ## Adding a new task
 
-- td `add` **content** _options_
-- td `a`   **content** _options_
+```
+td add <content> [options]
+td a   <content> [options]
+```
 
 This command captures a new task in the system.
 
@@ -41,9 +43,11 @@ This command captures a new task in the system.
 
 ## Editing a task
 
-- td **task-uid** `edit` _content_
-- td **task-uid** `ed` _content_
-- td **task-uid** `e` _content_
+```
+td <task-uid> edit [content]
+td <task-uid> ed [content]
+td <task-uid> e [content]
+```
 
 This command edits an already registered task by registering new values or its content / metadata. You can change
 its content, any of the metadata or all at the same time. If you omit the content, it will be left untouched. If you
@@ -54,8 +58,10 @@ omit a metadata, it will be left untouched.
 
 ## Describing a task
 
-- td **task-uid** `show`
-- td **task-uid** `s`
+```
+td <task-uid> show
+td <task-uid> s
+```
 
 Show the current state of a task.
 
@@ -65,7 +71,9 @@ This command is currently the only one showing the notes and their respective UI
 
 ## Consult the history of a task
 
-- td **task-uid** `history`
+```
+td <task-uid> history
+```
 
 Show the history of a task. This command will print everything that has happened to a task, with the associated time
 at which the event happened.
@@ -74,10 +82,9 @@ at which the event happened.
 
 ## Switch the status of a task
 
-- td **task-uid** `todo`
-- td **task-uid** `start`
-- td **task-uid** `done`
-- td **task-uid** `cancel`
+```
+td <task-uid> (todo | start | done | cancel)
+```
 
 These four commands allow to change the status of a task, whatever the previous status is. It is important to notice
 that you should not have to use `todo` too often: indeed, you will only need that command when you have started working
@@ -90,9 +97,11 @@ task, as it is recorded there.
 
 ## Listing tasks
 
-- td `list` _content_ _options_
-- td `ls` _content_ _options_
-- td `l` _content_ _options_
+```
+td list [content] [options]
+td ls   [content] [options]
+td l    [content] [options]
+```
 
 Listing tasks is one of the most useful commands you will ever run. For this reason, it’s the default command if you
 don’t pass any command to run to the binary. Listing tasks is currently the only way you have to know the UID of a task
@@ -115,8 +124,10 @@ don’t pass any command to run to the binary. Listing tasks is currently the on
 
 ## Adding notes
 
-- td **task-uid** `note` `add` _options_
-- td **task-uid** `note` `a` _options_
+```
+td <task-uid> note add [options]
+td <task-uid> note a   [options]
+```
 
 This command allows you to record a new note for a given task, referred to by **task-uid**. The note will be written
 in an editor, open trying to use the first of, in order:
@@ -146,9 +157,11 @@ Saving an empty note (with or without the header) aborts the operation.
 
 ## Editing notes
 
-- td **task-uid** `note` *note-uid* `edit` _options_
-- td **task-uid** `note` *note-uid* `ed` _options_
-- td **task-uid** `note` *note-uid* `e` _options_
+```
+td <task-uid> note <note-uid> edit [options]
+td <task-uid> note <note-uid> ed   [options]
+td <task-uid> note <note-uid> e    [options]
+```
 
 This command is very similar to `note add` but expects a note — referred to by `<note-uid>` – to operate on. When
 opening the editor, the same rules apply as with `note add`, but the pre-fill is also appended the current note
