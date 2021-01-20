@@ -45,8 +45,8 @@ This command captures a new task in the system.
 
 ```
 td <task-uid> edit [content]
-td <task-uid> ed [content]
-td <task-uid> e [content]
+td <task-uid> ed   [content]
+td <task-uid> e    [content]
 ```
 
 This command edits an already registered task by registering new values or its content / metadata. You can change
