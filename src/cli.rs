@@ -109,10 +109,6 @@ pub enum SubCommand {
     #[structopt(short, long)]
     all: bool,
 
-    /// Show the content of each listed task, if any.
-    #[structopt(long)]
-    content: bool,
-
     /// Apply filters ignoring case.
     #[structopt(short = "C", long)]
     case_insensitive: bool,

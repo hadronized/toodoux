@@ -148,7 +148,6 @@ pub fn run_subcmd(
           all,
           case_insensitive,
           metadata_filter,
-          ..
         } => {
           default_list(
             &config,
