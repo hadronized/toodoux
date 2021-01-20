@@ -105,9 +105,9 @@ impl Default for MainConfig {
       tags_col_name: "Tags".to_owned(),
       status_col_name: "Status".to_owned(),
       description_col_name: "Description".to_owned(),
+      notes_nb_col_name: "Notes".to_owned(),
       display_empty_cols: false,
       max_description_lines: 2,
-      notes_nb_col_name: "Notes".to_owned(),
       display_tags_listings: true,
       previous_notes_help: true,
     }
@@ -131,9 +131,9 @@ impl MainConfig {
     tags_col_name: impl Into<String>,
     status_col_name: impl Into<String>,
     description_col_name: impl Into<String>,
+    notes_nb_col_name: impl Into<String>,
     display_empty_cols: bool,
     max_description_lines: usize,
-    notes_nb_col_name: impl Into<String>,
     display_tags_listings: bool,
     previous_notes_help: bool,
   ) -> Self {
@@ -152,9 +152,9 @@ impl MainConfig {
       tags_col_name: tags_col_name.into(),
       status_col_name: status_col_name.into(),
       description_col_name: description_col_name.into(),
+      notes_nb_col_name: notes_nb_col_name.into(),
       display_empty_cols,
       max_description_lines,
-      notes_nb_col_name: notes_nb_col_name.into(),
       display_tags_listings,
       previous_notes_help,
     }
@@ -252,16 +252,16 @@ impl Config {
     &self.main.description_col_name
   }
 
+  pub fn notes_nb_col_name(&self) -> &str {
+    &self.main.notes_nb_col_name
+  }
+
   pub fn display_empty_cols(&self) -> bool {
     self.main.display_empty_cols
   }
 
   pub fn max_description_lines(&self) -> usize {
     self.main.max_description_lines
-  }
-
-  pub fn notes_nb_col_name(&self) -> &str {
-    &self.main.notes_nb_col_name
   }
 
   pub fn display_tags_listings(&self) -> bool {
