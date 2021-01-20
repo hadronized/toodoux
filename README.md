@@ -19,7 +19,17 @@ external applications integrate **toodoux** directly, but it will not be on our 
 Some other components might be shipped, such as _completions_ for typical shells (**bash**, **zsh** and **fish**), man
 pages, etc.
 
-You can have a look at the currently implemented [feature set](FEATURES.md). For any feature request, please open an issue.
+## Features
+
+The exhaustive feature set is available [here](./doc/features.md).
+
+## CLI User Guide
+
+The user guide is availble [here](./doc/cli.md).
+
+## User configuration
+
+The user configuration is available [here](./doc/config.md).
 
 [taskwarrior]: https://taskwarrior.org
 [contributing guide]: CONTRIBUTING.md
