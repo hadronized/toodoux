@@ -22,9 +22,9 @@ impl<'a> TaskDescriptionFilter<'a> {
   /// If `case_insensitive` is `true`, the resulting filter will ignore case.
   pub fn new(name: impl Iterator<Item = &'a str>, case_insensitive: bool) -> Self {
     if case_insensitive {
-      TaskDescriptionFilter::CaseSensitive(name.collect())
-    } else {
       TaskDescriptionFilter::CaseInsensitive(name.map(UniCase::new).collect())
+    } else {
+      TaskDescriptionFilter::CaseSensitive(name.collect())
     }
   }
 
@@ -47,7 +47,7 @@ impl<'a> TaskDescriptionFilter<'a> {
   /// Get an iterator on the carried search terms.
   pub fn terms(&'a self) -> Box<dyn 'a + Iterator<Item = &'a str>> {
     match self {
-      TaskDescriptionFilter::CaseSensitive(ref set) => Box::new(set.iter().map(|&x| x)),
+      TaskDescriptionFilter::CaseSensitive(ref set) => Box::new(set.iter().copied()),
       TaskDescriptionFilter::CaseInsensitive(ref set) => Box::new(set.iter().map(AsRef::as_ref)),
     }
   }
