@@ -92,7 +92,7 @@ impl Metadata {
     let mut output = Vec::new();
 
     for s in strings {
-      let words = s.split(" ").filter(|s| !s.is_empty());
+      let words = s.split(' ').filter(|s| !s.is_empty());
 
       for word in words {
         if let Ok(md) = word.parse() {
