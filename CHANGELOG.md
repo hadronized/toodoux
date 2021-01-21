@@ -1,3 +1,38 @@
+# 0.3.2
+
+> Jan 21, 2021
+
+## Additions
+
+- Add the history view. See [this](./doc/cli.md#consult-the-history-of-a-task) for further details.
+- Add support for tags display in listings (`td ls`). Because this might generate big listings, it is possible not to
+  show tags via the configuration file. See [this](./doc/config.md#display_tags_listings) for further details.
+- When adding / editing notes, the previously recorded notes are automatically shown as a header in the editor prompt.
+  This help section can be switched off manually with the `--no-history` switch and is configurable in the configuration
+  file. See [this](./doc/config.md#previous_notes_help).
+- When creating a task, the `--note` argument can be passed to automatically be dropped in an editor prompt and record
+  a note right way for the task that was just added. This is short cut to prevent users from having to read a task UID
+  and is similar to the following:
+  ```
+  td add Something to do
+  td <task-uid> note add
+  ```
+  The shortcut way is:
+  ```
+  td add Something to do --note
+  ```
+- Three new documents were added to help users get more information and guides:
+  - The [features](./doc/features.md) file, describing all the features currently supported by the latest version.
+  - The [CLI user guide](./doc/cli.md), providing a guide on how to use the CLI. Very similar to a _man(1)_.
+  - The [configuration user guide](./doc/config.md), which describes the configuration file and all the customization
+    options.
+
+## Patches / fixes
+
+- Fix a bug when editing note, where note UIDs were 0-based instead of being 1-based (as shown in the output of
+  `td <note-uid> show`).
+- Various internal refactorings.
+
 # 0.3.1
 
 > Jan 15, 2021
@@ -21,7 +56,6 @@
   terms. By default, these are sorted uniquely and are case-insensitive. It is possible to change the case behavior
   with the `-C` switch. Right now, it is not possible to enforce term order, nor cardinality (i.e. duplicated terms
   resolve to a single one, and terms are lexicographically sorted).
-
 
 # 0.2.5
 
