@@ -1,5 +1,9 @@
 # toodoux, a task manager in CLI / TUI
 
+<p align="center">
+  <img src="./doc/imgs/ls_project.png">
+</p>
+
 **toodoux** – English/French pun between _todo_ (EN) and _doux_ (FR, _soft_) — is a task management system that aims to
 be _super simple_ to operate but yet provide access to powerful features. It is heavily mainly based on [taskwarrior],
 for its powerful CLI and presentation. However, the opinionated task workflow in **toodoux** is rather different from
@@ -30,6 +34,28 @@ The user guide is availble [here](./doc/cli.md).
 ## User configuration
 
 The user configuration is available [here](./doc/config.md).
+
+## Screenshots
+
+<p align="center">
+  <img src="./doc/imgs/ls_project.png">
+  <i>Main listing view.</i>
+</p>
+
+<p align="center">
+  <img src="./doc/imgs/add_metadata_syntax.png">
+  <i>Capturing tasks from the CLI with a simple metadata syntax.</i>
+</p>
+
+<p align="center">
+  <img src="./doc/imgs/show.png">
+  <i>Display the current state of a task.</i>
+</p>
+
+<p align="center">
+  <img src="./doc/imgs/show_and_history.png">
+  <i>Display the current state of a task and its history in time.</i>
+</p>
 
 [taskwarrior]: https://taskwarrior.org
 [contributing guide]: CONTRIBUTING.md
