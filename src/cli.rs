@@ -240,7 +240,7 @@ pub fn list_tasks(
 
   // actual display
   // only display header if there are tasks to display
-  if tasks.len() > 0 {
+  if !tasks.is_empty() {
     display_task_header(config, &display_opts);
   }
 
@@ -991,7 +991,7 @@ fn highlight_status(config: &Config, status: Status) -> impl Display {
 /// Find out the age of a task and get a friendly representation.
 fn friendly_task_age(task: &Task) -> String {
   let dur =
-    Utc::now().signed_duration_since(task.creation_date().cloned().unwrap_or_else(|| Utc::now()));
+    Utc::now().signed_duration_since(task.creation_date().cloned().unwrap_or_else(Utc::now));
   friendly_duration(dur)
 }
 
