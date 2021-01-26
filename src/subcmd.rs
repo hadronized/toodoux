@@ -1,7 +1,8 @@
 use crate::{
   cli::NoteCommand,
   cli::{
-    add_task, date_time_to_string, edit_task, list_tasks, show_task, show_task_history, SubCommand,
+    add_task, date_time_to_string, edit_task, list_tasks, rename_project, show_task,
+    show_task_history, ProjectCommand, SubCommand,
   },
   config::Config,
   interactive_editor::interactively_edit,
@@ -218,6 +219,14 @@ pub fn run_subcmd(
           } else {
             println!("{}", "missing or unknown task to display history".red());
           }
+        }
+
+        SubCommand::Project(ProjectCommand::Rename {
+          current_project,
+          new_project,
+        }) => {
+          rename_project(&mut task_mgr, current_project, new_project);
+          task_mgr.save(&config)?;
         }
       }
     }

@@ -9,6 +9,7 @@ This document provides a comprehensive list of the features as currently impleme
   * [The four status](#the-four-status)
   * [Status customization](#status-customization)
   * [Implicit / computed metadata](#implicit--computed-metadata)
+* [Projects](#projects)
 * [Priorities](#priorities)
 * [Tags / labels](#tags--labels)
 * [Notes](#notes)
@@ -76,6 +77,14 @@ automatically computed, are:
   listings, but greyed out.
 - Its _completion duration_. When a task is moved to `DONE` or `CANCELLED` status, its _activation duration_ is
   automatically transformed into a _completion duration_.
+
+## Projects
+
+Tasks are by default _orphaned_: they don’t belong to any project. You can gather tasks under a project to group them
+in a more easy way.
+
+Projects are free names acting like special tags: a task can be in either no or one project at most. Projects on their
+own don’t exist currently as a specific kind of object in **toodoux**: they are just labels.
 
 ## Priorities
 

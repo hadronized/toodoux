@@ -67,6 +67,27 @@ impl TaskManager {
   pub fn get_mut(&mut self, uid: UID) -> Option<&mut Task> {
     self.tasks.get_mut(&uid)
   }
+
+  pub fn rename_project(
+    &mut self,
+    current_project: impl AsRef<str>,
+    new_project: impl AsRef<str>,
+    mut on_renamed: impl FnMut(UID),
+  ) {
+    let current_project = current_project.as_ref();
+    let new_project = new_project.as_ref();
+
+    for (uid, task) in &mut self.tasks {
+      match task.project() {
+        Some(project) if project == current_project => {
+          task.set_project(new_project);
+          on_renamed(*uid);
+        }
+
+        _ => (),
+      }
+    }
+  }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

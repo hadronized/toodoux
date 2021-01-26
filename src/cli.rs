@@ -128,6 +128,10 @@ pub enum SubCommand {
 
   /// Show the edit history of a task.
   History,
+
+  /// Manipulate projects.
+  #[structopt(visible_aliases = &["proj"])]
+  Project(ProjectCommand),
 }
 
 #[derive(Debug, StructOpt)]
@@ -154,6 +158,20 @@ pub enum NoteCommand {
     /// Overrides the user configuration.
     #[structopt(long)]
     no_history: bool,
+  },
+}
+
+#[derive(Debug, StructOpt)]
+pub enum ProjectCommand {
+  /// Rename a project.
+  ///
+  /// This has the effect of renamming the project used for all tasks if their current project is the one to rename.
+  Rename {
+    /// Project to rename.
+    current_project: String,
+
+    /// New name of the project.
+    new_project: String,
   },
 }
 
@@ -961,6 +979,26 @@ fn display_description(config: &Config, opts: &DisplayOptions, status: Status, d
 
     let hl_description = highlight_description_line(config, status, &line_buffer);
     println!("{:<width$}", hl_description, width = description_width);
+  }
+}
+
+pub fn rename_project(
+  task_mgr: &mut TaskManager,
+  current_project: impl AsRef<str>,
+  new_project: impl AsRef<str>,
+) {
+  let current_project = current_project.as_ref();
+  let new_project = new_project.as_ref();
+  let mut count = 0;
+
+  task_mgr.rename_project(&current_project, &new_project, |_| {
+    count += 1;
+  });
+
+  if count != 0 {
+    println!("updated {} tasks", count);
+  } else {
+    println!("{}", "no task for this project".yellow());
   }
 }
 
