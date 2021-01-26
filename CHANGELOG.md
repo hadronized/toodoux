@@ -1,3 +1,16 @@
+# 0.3.3
+
+> Jan 26, 2021
+
+## Additions
+
+- Add a new set of commands, under `td project`. The only currently available sub-command is `rename`, allowing to
+  perform mass renaming of project. Have a look at [this](./doc/cli.md#mass-renaming-projects) for further details.
+
+## Patches / fixes
+
+- Fix the case sensitive / insensitive filters (they were incorrectly reversed) when filtering on tasks’ contents.
+
 # 0.3.2
 
 > Jan 21, 2021
