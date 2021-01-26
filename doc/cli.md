@@ -22,6 +22,7 @@ possible aliases, those will be listed when the command is introduced.
 * [Listing tasks](#listing-tasks)
 * [Adding notes](#adding-notes)
 * [Editing notes](#editing-notes)
+* [Mass renaming projects](#mass-renaming-projects)
 
 <!-- vim-markdown-toc -->
 
@@ -173,6 +174,19 @@ Saving an empty note (with or without the header) aborts the operation.
 - **note-uid** is the note UID referring to the note to edit.
 - _options_:
   - `--no-history`: override user configuration and do not see the note history help.
+
+## Mass renaming projects
+
+```
+td project rename <current-project> <new-project>
+td proj    rename <current-project> <new-project>
+```
+
+This command allows to massively change the project of all the tasks of the same project, effectively renaming the
+project. It is similar to manually editing all the tasks one by one and changing setting the new project name on them.
+
+- **current-project** is the project to change.
+- **new-project** is the new name of the project.
 
 [metadata syntax]: ./features.md#metadata-syntax
 [taskwarrior]: https://taskwarrior.org
