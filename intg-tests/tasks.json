@@ -1,5 +1,5 @@
 {
-  "next_uid": 9,
+  "next_uid": 12,
   "tasks": {
     "2": {
       "name": "Foo",
@@ -29,6 +29,20 @@
         }
       ]
     },
+    "11": {
+      "name": "Foo",
+      "history": [
+        {
+          "Created": "2021-01-31T18:25:32.021734697Z"
+        },
+        {
+          "StatusChanged": {
+            "event_date": "2021-01-31T18:25:32.021734697Z",
+            "status": "Todo"
+          }
+        }
+      ]
+    },
     "4": {
       "name": "Zoo",
       "history": [
@@ -50,115 +64,6 @@
         {
           "StatusChanged": {
             "event_date": "2020-10-13T19:04:54.834798776Z",
-            "status": "Ongoing"
-          }
-        }
-      ]
-    },
-    "3": {
-      "name": "Bar",
-      "history": [
-        {
-          "Created": "2020-10-13T19:04:35.546321677Z"
-        },
-        {
-          "StatusChanged": {
-            "event_date": "2020-10-13T19:04:35.546321677Z",
-            "status": "Todo"
-          }
-        },
-        {
-          "SetProject": {
-            "event_date": "2020-10-13T19:04:35.546323530Z",
-            "project": "super-cool-project"
-          }
-        },
-        {
-          "AddTag": {
-            "event_date": "2020-10-13T19:04:35.546325073Z",
-            "tag": "tag0"
-          }
-        },
-        {
-          "AddTag": {
-            "event_date": "2020-10-13T19:04:35.546325444Z",
-            "tag": "i-love-dogs"
-          }
-        },
-        {
-          "SetPriority": {
-            "event_date": "2020-10-13T19:04:35.546326416Z",
-            "priority": "High"
-          }
-        },
-        {
-          "NoteAdded": {
-            "event_date": "2020-10-13T19:06:01Z",
-            "content": "This is the first note. This is a test. Be advised."
-          }
-        },
-        {
-          "NoteAdded": {
-            "event_date": "2020-10-13T19:10:50Z",
-            "content": "I’d like to discuss about my previous note. This is not a test. I repeat: this is not a test."
-          }
-        },
-        {
-          "NoteAdded": {
-            "event_date": "2020-11-16T00:38:03.545945645Z",
-            "content": "# Yay!\n\nThis note was added in interactive mode with `neovim`!\n\n"
-          }
-        },
-        {
-          "NoteReplaced": {
-            "event_date": "2020-11-16T19:46:31.241326865Z",
-            "note_uid": 1,
-            "content": "I’d like to discuss about my previous note. This is not a test. I repeat: this is not a test.\n\nActually, it’s a test, I’m just kidding. lol. :D\n"
-          }
-        }
-      ]
-    },
-    "8": {
-      "name": "We shouldn’t do this",
-      "history": [
-        {
-          "Created": "2020-10-15T12:06:32.845996823Z"
-        },
-        {
-          "StatusChanged": {
-            "event_date": "2020-10-15T12:06:32.845996823Z",
-            "status": "Todo"
-          }
-        },
-        {
-          "StatusChanged": {
-            "event_date": "2020-10-15T12:06:41.116349475Z",
-            "status": "Cancelled"
-          }
-        }
-      ]
-    },
-    "5": {
-      "name": "Zoo high",
-      "history": [
-        {
-          "Created": "2020-10-13T19:05:04.062904024Z"
-        },
-        {
-          "StatusChanged": {
-            "event_date": "2020-10-13T19:05:04.062904024Z",
-            "status": "Todo"
-          }
-        },
-        {
-          "SetPriority": {
-            "event_date": "2020-10-13T19:05:04.062907911Z",
-            "priority": "High"
-          }
-        },
-        {
-          "StatusChanged": {
-            "event_date": "2020-10-13T19:05:04.062911948Z",
             "status": "Ongoing"
           }
         }
@@ -234,6 +139,115 @@
         }
       ]
     },
+    "8": {
+      "name": "We shouldn’t do this",
+      "history": [
+        {
+          "Created": "2020-10-15T12:06:32.845996823Z"
+        },
+        {
+          "StatusChanged": {
+            "event_date": "2020-10-15T12:06:32.845996823Z",
+            "status": "Todo"
+          }
+        },
+        {
+          "StatusChanged": {
+            "event_date": "2020-10-15T12:06:41.116349475Z",
+            "status": "Cancelled"
+          }
+        }
+      ]
+    },
+    "3": {
+      "name": "Bar",
+      "history": [
+        {
+          "Created": "2020-10-13T19:04:35.546321677Z"
+        },
+        {
+          "StatusChanged": {
+            "event_date": "2020-10-13T19:04:35.546321677Z",
+            "status": "Todo"
+          }
+        },
+        {
+          "SetProject": {
+            "event_date": "2020-10-13T19:04:35.546323530Z",
+            "project": "super-cool-project"
+          }
+        },
+        {
+          "AddTag": {
+            "event_date": "2020-10-13T19:04:35.546325073Z",
+            "tag": "tag0"
+          }
+        },
+        {
+          "AddTag": {
+            "event_date": "2020-10-13T19:04:35.546325444Z",
+            "tag": "i-love-dogs"
+          }
+        },
+        {
+          "SetPriority": {
+            "event_date": "2020-10-13T19:04:35.546326416Z",
+            "priority": "High"
+          }
+        },
+        {
+          "NoteAdded": {
+            "event_date": "2020-10-13T19:06:01Z",
+            "content": "This is the first note. This is a test. Be advised."
+          }
+        },
+        {
+          "NoteAdded": {
+            "event_date": "2020-10-13T19:10:50Z",
+            "content": "I’d like to discuss about my previous note. This is not a test. I repeat: this is not a test."
+          }
+        },
+        {
+          "NoteAdded": {
+            "event_date": "2020-11-16T00:38:03.545945645Z",
+            "content": "# Yay!\n\nThis note was added in interactive mode with `neovim`!\n\n"
+          }
+        },
+        {
+          "NoteReplaced": {
+            "event_date": "2020-11-16T19:46:31.241326865Z",
+            "note_uid": 1,
+            "content": "I’d like to discuss about my previous note. This is not a test. I repeat: this is not a test.\n\nActually, it’s a test, I’m just kidding. lol. :D\n"
+          }
+        }
+      ]
+    },
+    "9": {
+      "name": "Something with an initial note",
+      "history": [
+        {
+          "Created": "2021-01-31T18:18:58.067327610Z"
+        },
+        {
+          "StatusChanged": {
+            "event_date": "2021-01-31T18:18:58.067327610Z",
+            "status": "Todo"
+          }
+        },
+        {
+          "SetPriority": {
+            "event_date": "2021-01-31T18:18:58.067331016Z",
+            "priority": "Critical"
+          }
+        },
+        {
+          "StatusChanged": {
+            "event_date": "2021-01-31T18:18:58.067334413Z",
+            "status": "Ongoing"
+          }
+        }
+      ]
+    },
     "6": {
       "name": "Do this right now!",
       "history": [
@@ -256,6 +270,64 @@
           "SetPriority": {
             "event_date": "2020-10-13T19:05:13.148973984Z",
             "priority": "Critical"
+          }
+        }
+      ]
+    },
+    "10": {
+      "name": "Something with an initial note",
+      "history": [
+        {
+          "Created": "2021-01-31T18:19:08.713642314Z"
+        },
+        {
+          "StatusChanged": {
+            "event_date": "2021-01-31T18:19:08.713642314Z",
+            "status": "Todo"
+          }
+        },
+        {
+          "SetPriority": {
+            "event_date": "2021-01-31T18:19:08.713645971Z",
+            "priority": "Critical"
+          }
+        },
+        {
+          "StatusChanged": {
+            "event_date": "2021-01-31T18:19:08.713649588Z",
+            "status": "Ongoing"
+          }
+        }
+      ]
+    },
+    "5": {
+      "name": "Zoo high",
+      "history": [
+        {
+          "Created": "2020-10-13T19:05:04.062904024Z"
+        },
+        {
+          "StatusChanged": {
+            "event_date": "2020-10-13T19:05:04.062904024Z",
+            "status": "Todo"
+          }
+        },
+        {
+          "SetPriority": {
+            "event_date": "2020-10-13T19:05:04.062907911Z",
+            "priority": "High"
+          }
+        },
+        {
+          "StatusChanged": {
+            "event_date": "2020-10-13T19:05:04.062911948Z",
+            "status": "Ongoing"
+          }
+        },
+        {
+          "StatusChanged": {
+            "event_date": "2021-01-31T15:59:03.582654482Z",
+            "status": "Done"
           }
         }
       ]

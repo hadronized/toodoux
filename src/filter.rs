@@ -5,7 +5,7 @@ use unicase::UniCase;
 
 /// A filter based on tasks’ description.
 #[derive(Clone)]
-pub(crate) enum TaskDescriptionFilter<'a> {
+pub enum TaskDescriptionFilter<'a> {
   /// Case-sensitive filter.
   ///
   /// Searching for `foo` is not the same as searching for `Foo`.
