@@ -1,6 +1,6 @@
 //! An abstracton of a terminal.
 
-pub trait Term {
+pub trait Terminal {
   /// Get the dimension (in characters / columns) of the terminal.
   fn dimensions(&self) -> Option<[usize; 2]>;
 }
@@ -8,7 +8,7 @@ pub trait Term {
 /// Default terminal abstraction..
 pub struct DefaultTerm;
 
-impl Term for DefaultTerm {
+impl Terminal for DefaultTerm {
   fn dimensions(&self) -> Option<[usize; 2]> {
     term_size::dimensions().map(|(w, h)| [w, h])
   }

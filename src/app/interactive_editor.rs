@@ -3,8 +3,9 @@
 //! This module provides a way to open an editor based on the `$EDITOR` environment variable or what is defined in the
 //! configuration.
 
-use crate::config::Config;
 use std::{env, error, fmt, fs, io, path::Path, process, string::FromUtf8Error};
+
+use toodoux::config::Config;
 
 /// Errors that can happen while interactively editing files.
 #[derive(Debug)]

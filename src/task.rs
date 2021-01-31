@@ -1,10 +1,13 @@
 //! Tasks related code.
 
-use crate::{config::Config, metadata::Metadata, metadata::Priority};
+use crate::{
+  config::Config, filter::TaskDescriptionFilter, metadata::Metadata, metadata::Priority,
+};
 use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 use serde_json as json;
 use std::{
+  cmp::Reverse,
   collections::HashMap,
   error::{self, Error},
   fmt, fs,
@@ -64,6 +67,10 @@ impl TaskManager {
     self.tasks.iter()
   }
 
+  pub fn get(&self, uid: UID) -> Option<&Task> {
+    self.tasks.get(&uid)
+  }
+
   pub fn get_mut(&mut self, uid: UID) -> Option<&mut Task> {
     self.tasks.get_mut(&uid)
   }
@@ -87,6 +94,58 @@ impl TaskManager {
         _ => (),
       }
     }
+  }
+
+  /// Get a listing of tasks that can be filtered with metadata and name filters.
+  pub fn filtered_task_listing(
+    &self,
+    metadata: Vec<Metadata>,
+    name_filter: TaskDescriptionFilter,
+    todo: bool,
+    start: bool,
+    done: bool,
+    cancelled: bool,
+    case_insensitive: bool,
+  ) -> Vec<(&UID, &Task)> {
+    let mut tasks: Vec<_> = self
+      .tasks()
+      .filter(|(_, task)| {
+        // filter the task depending on what is passed as argument
+        let status_filter = match task.status() {
+          Status::Ongoing => start,
+          Status::Todo => todo,
+          Status::Done => done,
+          Status::Cancelled => cancelled,
+        };
+
+        if metadata.is_empty() {
+          status_filter
+        } else {
+          status_filter && task.check_metadata(metadata.iter(), case_insensitive)
+        }
+      })
+      .filter(|(_, task)| {
+        if !name_filter.is_empty() {
+          let mut name_filter = name_filter.clone();
+
+          for word in task.name().split_ascii_whitespace() {
+            let word_found = name_filter.remove(word);
+
+            if word_found && name_filter.is_empty() {
+              return true;
+            }
+          }
+
+          false
+        } else {
+          true
+        }
+      })
+      .collect();
+
+    tasks.sort_by_key(|&(uid, task)| Reverse((task.priority(), task.age(), task.status(), uid)));
+
+    tasks
   }
 }
 

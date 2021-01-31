@@ -1,18 +1,12 @@
 mod cli;
-mod config;
-mod filter;
 mod interactive_editor;
-mod metadata;
-mod subcmd;
-mod task;
 mod term;
 
 use crate::{
   cli::{Command, SubCommand},
-  config::Config,
   term::DefaultTerm,
 };
-
+use cli::CLI;
 use colored::Colorize as _;
 use std::{
   error::Error,
@@ -20,8 +14,8 @@ use std::{
   path::Path,
 };
 use structopt::StructOpt;
-use subcmd::run_subcmd;
-use task::UID;
+use toodoux::task::UID;
+use toodoux::{config::Config, task::TaskManager};
 
 fn print_introduction_text() {
   println!(
@@ -113,7 +107,9 @@ fn initiate_with_config(
         "running on configuration at {}",
         config.root_dir().display()
       );
-      run_subcmd(config, term, subcmd, task_uid)
+
+      let mut task_mgr = TaskManager::new_from_config(&config)?;
+      CLI::new(config, term)?.run(&mut task_mgr, subcmd, task_uid)
     }
 
     // no configuration; create it
@@ -150,7 +146,8 @@ fn initiate_with_config(
         let config = Config::create(path).ok_or_else(|| "cannot create config file")?;
         config.save()?;
 
-        run_subcmd(config, term, subcmd, task_uid)
+        let mut task_mgr = TaskManager::new_from_config(&config)?;
+        CLI::new(config, term)?.run(&mut task_mgr, subcmd, task_uid)
       } else {
         print_no_file_information();
         Ok(())

@@ -11,14 +11,17 @@ repository = "https://github.com/phaazon/toodoux"
 readme = "README.md"
 edition = "2018"
 
+[lib]
+name = "toodoux"
+
 [[bin]]
 name = "td"
-path = "src/main.rs"
+path = "src/app/main.rs"
 
 [dependencies]
 chrono = { version = "0.4.11", features = ["serde"] }
 colored = "2"
-dirs = "3.0.1"
+dirs = "3"
 env_logger = "0.8.2"
 itertools = "0.10.0"
 log = "0.4.13"
@@ -28,7 +31,7 @@ structopt = "0.3.21"
 term_size = "0.3.2"
 tempdir = "0.3.7"
 toml = "0.5.8"
-unicase = "2.6.0"
+unicase = "2.6"
 unicode-width = "0.1.8"
 
 [dev-dependencies]
