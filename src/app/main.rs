@@ -39,10 +39,10 @@ You will first be able to {add_tasks} new tasks, {edit_tasks} existing tasks, {r
   );
 }
 
-fn print_wizzard_question() {
+fn print_wizard_question() {
   print!(
-    "\n{wizzard_question} ({Y}/{n}) ➤ ",
-    wizzard_question =
+    "\n{wizard_question} ({Y}/{n}) ➤ ",
+    wizard_question =
       "You don’t seem to have a configuration set up…\nWould you like to set it up?".blue(),
     Y = "Y".green().bold(),
     n = "n".red(),
@@ -52,7 +52,7 @@ fn print_wizzard_question() {
 }
 
 fn print_no_file_information() {
-  println!("\n{toodoux} {rest}", toodoux = "toodoux".purple().bold(), rest = "won’t work without a configuration file. If you don’t want to generate it via this interactive wizzard, you can create it by hand and put it in the right folder, depending on the platform you run on.".red());
+  println!("\n{toodoux} {rest}", toodoux = "toodoux".purple().bold(), rest = "won’t work without a configuration file. If you don’t want to generate it via this interactive wizard, you can create it by hand and put it in the right folder, depending on the platform you run on.".red());
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -118,13 +118,13 @@ fn initiate_with_config(
 
       let mut input = String::new();
 
-      // initiate configuration file creation wizzard and create the configuration file
+      // initiate configuration file creation wizard and create the configuration file
       print_introduction_text();
 
       let must_create_config_file = loop {
         input.clear();
 
-        print_wizzard_question();
+        print_wizard_question();
         io::stdin().read_line(&mut input).unwrap();
 
         match input.trim_end() {
