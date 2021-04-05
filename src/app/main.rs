@@ -3,13 +3,13 @@ mod interactive_editor;
 mod term;
 
 use crate::{
-  cli::{Command, SubCommand},
+  cli::{Command, SubCmdError, SubCommand},
   term::DefaultTerm,
 };
 use cli::CLI;
 use colored::Colorize as _;
+
 use std::{
-  error::Error,
   io::{self, Write as _},
   path::Path,
 };
@@ -55,7 +55,13 @@ fn print_no_file_information() {
   println!("\n{toodoux} {rest}", toodoux = "toodoux".purple().bold(), rest = "won’t work without a configuration file. If you don’t want to generate it via this interactive wizard, you can create it by hand and put it in the right folder, depending on the platform you run on.".red());
 }
 
-fn main() -> Result<(), Box<dyn Error>> {
+fn main() {
+  if let Err(err) = entry_point() {
+    eprintln!("{}", err.to_string().red().bold())
+  }
+}
+
+fn entry_point() -> Result<(), SubCmdError> {
   let Command {
     subcmd,
     config,
@@ -79,7 +85,7 @@ fn initiate_explicit_config(
   config_path: impl AsRef<Path>,
   subcmd: Option<SubCommand>,
   task_uid: Option<UID>,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<(), SubCmdError> {
   let path = config_path.as_ref();
   let config = Config::from_dir(path)?;
 
@@ -87,7 +93,7 @@ fn initiate_explicit_config(
 }
 
 /// Initiate configuration by using the default configuration path.
-fn initiate(subcmd: Option<SubCommand>, task_uid: Option<UID>) -> Result<(), Box<dyn Error>> {
+fn initiate(subcmd: Option<SubCommand>, task_uid: Option<UID>) -> Result<(), SubCmdError> {
   let config = Config::get()?;
   initiate_with_config(None, config, subcmd, task_uid)
 }
@@ -97,7 +103,7 @@ fn initiate_with_config(
   config: Option<Config>,
   subcmd: Option<SubCommand>,
   task_uid: Option<UID>,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<(), SubCmdError> {
   let term = DefaultTerm;
 
   match config {
@@ -109,7 +115,7 @@ fn initiate_with_config(
       );
 
       let mut task_mgr = TaskManager::new_from_config(&config)?;
-      CLI::new(config, term)?.run(&mut task_mgr, subcmd, task_uid)
+      CLI::new(config, term).run(&mut task_mgr, subcmd, task_uid)
     }
 
     // no configuration; create it
@@ -143,11 +149,11 @@ fn initiate_with_config(
       };
 
       if must_create_config_file {
-        let config = Config::create(path).ok_or_else(|| "cannot create config file")?;
+        let config = Config::create(path)?;
         config.save()?;
 
         let mut task_mgr = TaskManager::new_from_config(&config)?;
-        CLI::new(config, term)?.run(&mut task_mgr, subcmd, task_uid)
+        CLI::new(config, term).run(&mut task_mgr, subcmd, task_uid)
       } else {
         print_no_file_information();
         Ok(())
