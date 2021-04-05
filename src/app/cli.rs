@@ -1,13 +1,17 @@
 //! Command line interface.
 
-use crate::{interactive_editor::interactively_edit, term::Terminal};
+use crate::{
+  interactive_editor::{interactively_edit, InteractiveEditingError},
+  term::Terminal,
+};
 use chrono::{DateTime, Duration, Utc};
 use colored::Colorize as _;
 use itertools::Itertools as _;
-use std::{error::Error, fmt, fmt::Display, iter::once, path::PathBuf};
+use std::{fmt, fmt::Display, iter::once, path::PathBuf};
 use structopt::StructOpt;
 use toodoux::{
   config::Config,
+  error::Error,
   filter::TaskDescriptionFilter,
   metadata::{Metadata, MetadataValidationError, Priority},
   task::{Event, Status, Task, TaskManager, UID},
@@ -178,21 +182,45 @@ pub enum ProjectCommand {
 }
 
 #[derive(Debug)]
-enum SubCmdError {
+pub enum SubCmdError {
+  MetadataValidationError(MetadataValidationError),
   CannotEditNote(String),
   EmptyNote,
+  InteractiveEditingError(InteractiveEditingError),
+  ToodouxError(Error),
 }
 
 impl fmt::Display for SubCmdError {
   fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
     match *self {
+      SubCmdError::MetadataValidationError(ref e) => write!(f, "metadata validation error: {}", e),
       SubCmdError::CannotEditNote(ref reason) => write!(f, "cannot edit note: {}", reason),
       SubCmdError::EmptyNote => f.write_str("the note was empty; nothing added"),
+      SubCmdError::InteractiveEditingError(ref e) => write!(f, "interactive edit error: {}", e),
+      SubCmdError::ToodouxError(ref e) => write!(f, "toodoux error: {}", e),
     }
   }
 }
 
-impl Error for SubCmdError {}
+impl std::error::Error for SubCmdError {}
+
+impl From<MetadataValidationError> for SubCmdError {
+  fn from(err: MetadataValidationError) -> Self {
+    Self::MetadataValidationError(err)
+  }
+}
+
+impl From<InteractiveEditingError> for SubCmdError {
+  fn from(err: InteractiveEditingError) -> Self {
+    Self::InteractiveEditingError(err)
+  }
+}
+
+impl From<Error> for SubCmdError {
+  fn from(err: Error) -> Self {
+    Self::ToodouxError(err)
+  }
+}
 
 pub struct CLI<Term> {
   config: Config,
@@ -204,8 +232,8 @@ where
   Term: Terminal,
 {
   /// Create a CLI.
-  pub fn new(config: Config, term: Term) -> Result<Self, Box<dyn Error>> {
-    Ok(Self { config, term })
+  pub fn new(config: Config, term: Term) -> Self {
+    Self { config, term }
   }
 
   /// Run a subcommand of the CLI.
@@ -214,7 +242,7 @@ where
     task_mgr: &mut TaskManager,
     subcmd: Option<SubCommand>,
     task_uid: Option<UID>,
-  ) -> Result<(), Box<dyn Error>> {
+  ) -> Result<(), SubCmdError> {
     match subcmd {
       // default subcommand
       None => {
@@ -453,7 +481,7 @@ where
     done: bool,
     case_insensitive: bool,
     metadata_filter: Vec<String>,
-  ) -> Result<(), Box<dyn Error>> {
+  ) -> Result<(), SubCmdError> {
     // extract metadata if any and build the name filter
     let (metadata, name) = Self::extract_metadata(&metadata_filter)?;
 
@@ -505,7 +533,7 @@ where
     all: bool,
     case_insensitive: bool,
     metadata_filter: Vec<String>,
-  ) -> Result<(), Box<dyn Error>> {
+  ) -> Result<(), SubCmdError> {
     // handle filtering logic
     if all {
       todo = true;
@@ -854,7 +882,7 @@ where
     start: bool,
     done: bool,
     content: Vec<String>,
-  ) -> Result<UID, Box<dyn Error>> {
+  ) -> Result<UID, SubCmdError> {
     // validate the metadata extracted from the content, if any
     let (metadata, name) = Metadata::from_words(content.iter().map(|s| s.as_str()));
     Metadata::validate(&metadata)?;
@@ -887,7 +915,7 @@ where
   pub fn edit_task<'a>(
     task: &mut Task,
     content: impl IntoIterator<Item = &'a str>,
-  ) -> Result<(), Box<dyn Error>> {
+  ) -> Result<(), SubCmdError> {
     // validate the metadata extracted from the content, if any
     let (metadata, name) = Metadata::from_words(content);
     Metadata::validate(&metadata)?;
@@ -1393,7 +1421,7 @@ fn interactively_edit_note(
   with_history: bool,
   task: &Task,
   prefill: &str,
-) -> Result<String, Box<dyn Error>> {
+) -> Result<String, SubCmdError> {
   let prefill = if with_history {
     // if we have the previously recorded note help, pre-populate the file with the previous notes
     let mut new_prefill = task
@@ -1439,18 +1467,18 @@ fn interactively_edit_note(
         .unwrap();
 
       if content.trim().is_empty() {
-        Err(Box::new(SubCmdError::EmptyNote))
+        Err(SubCmdError::EmptyNote)
       } else {
         Ok(content.to_owned())
       }
     } else {
-      Err(Box::new(SubCmdError::CannotEditNote(
+      Err(SubCmdError::CannotEditNote(
         "I told you not to temper with this line!".to_owned(),
-      )))
+      ))
     }
   } else {
     if note_content.trim().is_empty() {
-      Err(Box::new(SubCmdError::EmptyNote))
+      Err(SubCmdError::EmptyNote)
     } else {
       Ok(note_content)
     }

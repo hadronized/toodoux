@@ -1,18 +1,13 @@
 //! Tasks related code.
 
 use crate::{
-  config::Config, filter::TaskDescriptionFilter, metadata::Metadata, metadata::Priority,
+  config::Config, error::Error, filter::TaskDescriptionFilter, metadata::Metadata,
+  metadata::Priority,
 };
 use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 use serde_json as json;
-use std::{
-  cmp::Reverse,
-  collections::HashMap,
-  error::{self, Error},
-  fmt, fs,
-  str::FromStr,
-};
+use std::{cmp::Reverse, collections::HashMap, error, fmt, fs, io, str::FromStr};
 use unicase::UniCase;
 
 /// Create, edit, remove and list tasks.
@@ -26,11 +21,13 @@ pub struct TaskManager {
 
 impl TaskManager {
   /// Create a manager from a configuration.
-  pub fn new_from_config(config: &Config) -> Result<Self, Box<dyn Error>> {
+  pub fn new_from_config(config: &Config) -> Result<Self, Error> {
     let path = config.tasks_path();
 
     if path.is_file() {
-      Ok(json::from_reader(fs::File::open(path)?)?)
+      Ok(json::from_reader(
+        fs::File::open(path).map_err(Error::CannotOpenFile)?,
+      )?)
     } else {
       let task_mgr = TaskManager {
         next_uid: UID::default(),
@@ -56,9 +53,9 @@ impl TaskManager {
     uid
   }
 
-  pub fn save(&mut self, config: &Config) -> Result<(), Box<dyn Error>> {
+  pub fn save(&mut self, config: &Config) -> Result<(), Error> {
     Ok(json::to_writer_pretty(
-      fs::File::create(config.tasks_path())?,
+      fs::File::create(config.tasks_path()).map_err(Error::CannotSave)?,
       self,
     )?)
   }
@@ -228,11 +225,7 @@ impl Task {
   }
 
   /// Replace the content of a note for a given [`Task`].
-  pub fn replace_note(
-    &mut self,
-    note_uid: UID,
-    content: impl Into<String>,
-  ) -> Result<(), NoteError> {
+  pub fn replace_note(&mut self, note_uid: UID, content: impl Into<String>) -> Result<(), Error> {
     // ensure the note exists first
     let mut count = 0;
     let id: u32 = note_uid.into();
@@ -250,7 +243,7 @@ impl Task {
     });
 
     if previous_note.is_none() {
-      return Err(NoteError::UnknownNote(note_uid));
+      return Err(Error::UnknownNote(note_uid));
     }
 
     self.history.push(Event::NoteReplaced {
@@ -541,23 +534,6 @@ pub enum Event {
     tag: String,
   },
 }
-
-/// Error that can happen while processing notes.
-#[derive(Debug, Clone, Eq, PartialEq)]
-pub enum NoteError {
-  /// Note doesn’t exists for given task.
-  UnknownNote(UID),
-}
-
-impl fmt::Display for NoteError {
-  fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-    match *self {
-      NoteError::UnknownNote(uid) => write!(f, "note {} doesn’t exist", uid),
-    }
-  }
-}
-
-impl error::Error for NoteError {}
 
 /// A note.
 #[derive(Debug, Clone, Eq, PartialEq)]

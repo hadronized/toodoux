@@ -3,7 +3,12 @@
 //! This module provides a way to open an editor based on the `$EDITOR` environment variable or what is defined in the
 //! configuration.
 
-use std::{env, error, fmt, fs, io, path::Path, process, string::FromUtf8Error};
+use std::{
+  env, error, fmt, fs, io,
+  path::{Path, PathBuf},
+  process,
+  string::FromUtf8Error,
+};
 
 use toodoux::config::Config;
 
@@ -12,7 +17,7 @@ use toodoux::config::Config;
 pub enum InteractiveEditingError {
   FileError(io::Error),
   MissingInteractiveEditor,
-  InteractiveEditorError(io::Error),
+  InteractiveEditorError(PathBuf, io::Error),
   Utf8Error(FromUtf8Error),
 }
 
@@ -23,8 +28,13 @@ impl fmt::Display for InteractiveEditingError {
       InteractiveEditingError::MissingInteractiveEditor => f.write_str(
         "no interactive editor was found; consider configuring either $EDITOR or the configuration",
       ),
-      InteractiveEditingError::InteractiveEditorError(ref err) => {
-        write!(f, "interactive editor error: {}", err)
+      InteractiveEditingError::InteractiveEditorError(ref path, ref err) => {
+        write!(
+          f,
+          "interactive editor error at path {}: {}",
+          path.display(),
+          err
+        )
       }
       InteractiveEditingError::Utf8Error(ref err) => {
         write!(f, "error while decoding UTF-8: {}", err)
@@ -88,9 +98,9 @@ pub fn interactively_edit(
     .arg(&file_path)
     .arg("+$")
     .spawn()
-    .map_err(InteractiveEditingError::InteractiveEditorError)?
+    .map_err(|e| InteractiveEditingError::InteractiveEditorError(file_path.clone(), e))?
     .wait()
-    .map_err(InteractiveEditingError::InteractiveEditorError)?;
+    .map_err(|e| InteractiveEditingError::InteractiveEditorError(file_path.clone(), e))?;
   let content = fs::read_to_string(file_path)?;
 
   Ok(content)

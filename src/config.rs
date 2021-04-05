@@ -7,12 +7,13 @@ use serde::{
   Deserialize, Serialize,
 };
 use std::{
-  error::Error,
   fmt, fs,
   ops::Deref,
   path::{Path, PathBuf},
   str::FromStr,
 };
+
+use crate::error::Error;
 
 #[derive(Debug, Deserialize, Serialize, Default)]
 #[serde(default)]
@@ -167,21 +168,21 @@ impl Config {
     Config { main, colors }
   }
 
-  fn get_config_path() -> Result<PathBuf, Box<dyn Error>> {
+  fn get_config_path() -> Result<PathBuf, Error> {
     log::trace!("getting configuration root path from the environment");
-    let home = dirs::config_dir().ok_or("cannot find configuration directory")?;
+    let home = dirs::config_dir().ok_or_else(|| Error::NoConfigDir)?;
     let path = Path::new(&home).join("toodoux");
 
     Ok(path)
   }
 
-  pub fn from_dir(path: impl AsRef<Path>) -> Result<Option<Self>, Box<dyn Error>> {
+  pub fn from_dir(path: impl AsRef<Path>) -> Result<Option<Self>, Error> {
     let path = path.as_ref().join("config.toml");
 
     log::trace!("reading configuration from {}", path.display());
     if path.is_file() {
-      let content = fs::read_to_string(&path)?;
-      let parsed = toml::from_str(&content)?;
+      let content = fs::read_to_string(&path).map_err(Error::CannotOpenFile)?;
+      let parsed = toml::from_str(&content).map_err(Error::CannotDeserializeFromTOML)?;
       Ok(Some(parsed))
     } else {
       Ok(None)
@@ -272,16 +273,14 @@ impl Config {
     self.main.previous_notes_help
   }
 
-  pub fn get() -> Result<Option<Self>, Box<dyn Error>> {
+  pub fn get() -> Result<Option<Self>, Error> {
     let path = Self::get_config_path()?;
     Self::from_dir(path)
   }
 
-  pub fn create(path: Option<&Path>) -> Option<Self> {
+  pub fn create(path: Option<&Path>) -> Result<Self, Error> {
     let default_config = Self::default();
-    let tasks_file = path
-      .map(|p| p.to_owned())
-      .or_else(|| Self::get_config_path().ok())?;
+    let tasks_file = path.map_or_else(Self::get_config_path, |p| Ok(p.to_owned()))?;
 
     let main = MainConfig {
       tasks_file,
@@ -294,15 +293,15 @@ impl Config {
 
     log::trace!("creating new configuration:\n{:#?}", config);
 
-    Some(config)
+    Ok(config)
   }
 
-  pub fn save(&self) -> Result<(), Box<dyn Error>> {
+  pub fn save(&self) -> Result<(), Error> {
     let root_dir = self.root_dir();
-    fs::create_dir_all(root_dir)?;
+    fs::create_dir_all(root_dir).map_err(Error::CannotSave)?;
 
-    let serialized = toml::to_string_pretty(self)?;
-    let _ = fs::write(self.config_toml_path(), serialized)?;
+    let serialized = toml::to_string_pretty(self).map_err(Error::CannotSerializeToTOML)?;
+    let _ = fs::write(self.config_toml_path(), serialized).map_err(Error::CannotSave)?;
 
     Ok(())
   }
