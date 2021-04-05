@@ -6,7 +6,7 @@ use crate::{
 };
 use chrono::{DateTime, Duration, Utc};
 use colored::Colorize as _;
-use itertools::Itertools as _;
+use itertools::Itertools;
 use std::{fmt, fmt::Display, iter::once, path::PathBuf};
 use structopt::StructOpt;
 use toodoux::{
@@ -699,7 +699,9 @@ where
   fn display_tags(task: &Task, opts: &DisplayOptions) {
     print!(
       " {tags:<tags_width$}",
-      tags = task.tags().intersperse(", ").collect::<String>().yellow(),
+      tags = Itertools::intersperse(task.tags(), ", ")
+        .collect::<String>()
+        .yellow(),
       tags_width = opts.tags_width,
     );
   }
@@ -1319,9 +1321,7 @@ impl DisplayOptions {
 
   /// Guess the width required to represent the task tags.
   fn guess_tags_width(task: &Task) -> usize {
-    task
-      .tags()
-      .intersperse(", ")
+    Itertools::intersperse(task.tags(), ", ")
       .map(UnicodeWidthStr::width)
       .sum()
   }

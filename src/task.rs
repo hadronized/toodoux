@@ -7,7 +7,7 @@ use crate::{
 use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 use serde_json as json;
-use std::{cmp::Reverse, collections::HashMap, error, fmt, fs, io, str::FromStr};
+use std::{cmp::Reverse, collections::HashMap, fmt, fs, str::FromStr};
 use unicase::UniCase;
 
 /// Create, edit, remove and list tasks.

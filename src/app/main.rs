@@ -8,14 +8,14 @@ use crate::{
 };
 use cli::CLI;
 use colored::Colorize as _;
-use core::fmt;
+
 use std::{
   io::{self, Write as _},
   path::Path,
 };
 use structopt::StructOpt;
+use toodoux::task::UID;
 use toodoux::{config::Config, task::TaskManager};
-use toodoux::{error::Error, task::UID};
 
 fn print_introduction_text() {
   println!(
