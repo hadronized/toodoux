@@ -1,3 +1,12 @@
+# 0.4
+
+> Apr 05, 2021
+
+- Big refactoring.
+- Bump `serde`.
+- Bump `serde-json`.
+- Bump `serde_test`.
+
 # 0.3.3
 
 > Jan 26, 2021
